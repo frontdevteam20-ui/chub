@@ -1,0 +1,68 @@
+.section {
+    max-width: 800px;
+    /* margin: auto; */
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    background: #FFF;
+    font-family: 'poppins', sans-serif;
+    box-shadow: 0px 0px 10px 0px var(--Primary-Primary100, #FCE2DB);
+  }
+  
+  .blogSection,
+  .imageSection,
+  .faqSection {
+    background: #f8f3f1;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .uploadButton {
+    background: #ddd;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .addButton {
+    background: #05A7CC;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .submitbutton{
+    background: #05A7CC;
+    color: white;
+    padding: 10px;
+    border: none;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    float: right;
+  }
+  .addButton:hover {
+    background: #005f79;
+  }
+  .crossbutton{
+    border-radius: 2px;
+    padding: 10px;
+    border: 1px solid var(--Primary-Primary200, #FAC5B7);
+    background: var(--Foundation-techcloud-primary-techcloud-primary-50, #FDEEE9);
+  }

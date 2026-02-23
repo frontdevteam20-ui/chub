@@ -1,0 +1,263 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
+// TODO: Move to environment variables
+const CALENDLY_ACCESS_TOKEN = 'eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzUyNTAxNjM0LCJqdGkiOiJmMmI0ZmE4ZC1iMzQ3LTQ2YzktODA2Ni1mNDA2Y2YwN2FiNTEiLCJ1c2VyX3V1aWQiOiIxYmI0NGE3YS1lY2EwLTRmNmEtOTA2Yi1hNzBiOTMzMzIzMmQifQ.cv0mOwuQM4C6TlTMUhGqM6tIhwNNL9_LSw_z6XYEWZcxFbD3238ygOZFLsVn23Gq7IaRHjQYHx2VKglChosBBA';
+const CALENDLY_USER_URL = 'https://api.calendly.com/users/me';
+const CALENDLY_EVENTS_URL = 'https://api.calendly.com/scheduled_events';
+const CALENDLY_INVITEES_URL = 'https://api.calendly.com/scheduled_events/{event_uuid}/invitees';
+
+export const fetchCalendarData = createAsyncThunk(
+  'calendar/fetchData',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Step 1: Get organization URI
+      const userRes = await fetch(CALENDLY_USER_URL, {
+        headers: {
+          'Authorization': `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!userRes.ok) throw new Error('Failed to fetch Calendly user info');
+      const userData = await userRes.json();
+      const orgUri = userData.resource?.current_organization;
+      if (!orgUri) throw new Error('Calendly organization URI not found');
+
+      // Step 2: Fetch all pages of scheduled events for this organization
+      let allEvents = [];
+      let nextPage = null;
+      let url = `${CALENDLY_EVENTS_URL}?organization=${encodeURIComponent(orgUri)}`;
+      
+      do {
+        const eventsRes = await fetch(nextPage || url, {
+          headers: {
+            'Authorization': `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!eventsRes.ok) throw new Error('Failed to fetch Calendly events');
+        const eventsData = await eventsRes.json();
+        allEvents = [...allEvents, ...(eventsData.collection || [])];
+        nextPage = eventsData.pagination?.next_page;
+      } while (nextPage);
+
+      // Process events with invitees
+      const eventsWithInvitees = await Promise.all(
+        allEvents.map(async (event) => {
+          try {
+            const uuid = event.uri.split('/').pop();
+            const inviteeRes = await fetch(
+              CALENDLY_INVITEES_URL.replace('{event_uuid}', uuid),
+              {
+                headers: {
+                  'Authorization': `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+            
+            if (!inviteeRes.ok) throw new Error('Failed to fetch invitees');
+            const inviteeData = await inviteeRes.json();
+            
+            // Calculate status based on event and invitee data
+            let _calculatedStatus = event.status;
+            const now = new Date();
+            const endTime = new Date(event.end_time);
+            
+            if (event.status === 'canceled') {
+              _calculatedStatus = 'canceled';
+            } else if (inviteeData.collection?.some(i => i._raw?.no_show) && endTime < now) {
+              _calculatedStatus = 'no_show';
+            } else if (endTime < now) {
+              _calculatedStatus = 'completed';
+            } else {
+              _calculatedStatus = 'upcoming';
+            }
+            
+            return {
+              ...event,
+              _calculatedStatus,
+              _invitees: inviteeData.collection || [],
+            };
+          } catch (error) {
+            console.error('Error processing event invitees:', error);
+            return {
+              ...event,
+              _calculatedStatus: 'error',
+              _invitees: [],
+            };
+          }
+        })
+      );
+
+      return eventsWithInvitees;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+const initialState = {
+  events: [],
+  loading: false,
+  error: null,
+  lastFetched: null,
+};
+
+const calendarSlice = createSlice({
+  name: 'calendar',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCalendarData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCalendarData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload;
+        state.lastFetched = Date.now();
+      })
+      .addCase(fetchCalendarData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch calendar data';
+      });
+  },
+});
+
+export const selectAllEvents = (state) => state.calendar.events;
+export const selectCalendarLoading = (state) => state.calendar.loading;
+export const selectCalendarError = (state) => state.calendar.error;
+export const selectLastFetched = (state) => state.calendar.lastFetched;
+
+export default calendarSlice.reducer;
+
+export const fetchCalendarData = createAsyncThunk(
+  'calendar/fetchData',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Step 1: Get organization URI
+      const userRes = await fetch(CALENDLY_USER_URL, {
+        headers: {
+          'Authorization': `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!userRes.ok) throw new Error('Failed to fetch Calendly user info');
+      const userData = await userRes.json();
+      const orgUri = userData.resource?.current_organization;
+      if (!orgUri) throw new Error('Calendly organization URI not found');
+
+      // Step 2: Fetch all pages of scheduled events for this organization
+      let allEvents = [];
+      let nextPage = null;
+      let url = `${CALENDLY_EVENTS_URL}?organization=${encodeURIComponent(orgUri)}`;
+      
+      do {
+        const eventsRes = await fetch(nextPage || url, {
+          headers: {
+            'Authorization': `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!eventsRes.ok) throw new Error('Failed to fetch Calendly events');
+        const eventsData = await eventsRes.json();
+        allEvents = [...allEvents, ...(eventsData.collection || [])];
+        nextPage = eventsData.pagination?.next_page;
+      } while (nextPage);
+
+      // Process events with invitees
+      const eventsWithInvitees = await Promise.all(
+        allEvents.map(async (event) => {
+          try {
+            const uuid = event.uri.split('/').pop();
+            const inviteeRes = await fetch(
+              CALENDLY_INVITEES_URL.replace('{event_uuid}', uuid),
+              {
+                headers: {
+                  'Authorization': `Bearer ${CALENDLY_ACCESS_TOKEN}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+            
+            if (!inviteeRes.ok) throw new Error('Failed to fetch invitees');
+            const inviteeData = await inviteeRes.json();
+            
+            // Calculate status based on event and invitee data
+            let _calculatedStatus = event.status;
+            const now = new Date();
+            const endTime = new Date(event.end_time);
+            
+            if (event.status === 'canceled') {
+              _calculatedStatus = 'canceled';
+            } else if (inviteeData.collection?.some(i => i._raw?.no_show) && endTime < now) {
+              _calculatedStatus = 'no_show';
+            } else if (endTime < now) {
+              _calculatedStatus = 'completed';
+            } else {
+              _calculatedStatus = 'upcoming';
+            }
+            
+            return {
+              ...event,
+              _calculatedStatus,
+              _invitees: inviteeData.collection || [],
+            };
+          } catch (error) {
+            console.error('Error processing event invitees:', error);
+            return {
+              ...event,
+              _calculatedStatus: 'error',
+              _invitees: [],
+            };
+          }
+        })
+      );
+
+      return eventsWithInvitees;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+const initialState = {
+  events: [],
+  loading: false,
+  error: null,
+  lastFetched: null,
+};
+
+const calendarSlice = createSlice({
+  name: 'calendar',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCalendarData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCalendarData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload;
+        state.lastFetched = Date.now();
+      })
+      .addCase(fetchCalendarData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch calendar data';
+      });
+  },
+});
+
+export const selectAllEvents = (state) => state.calendar.events;
+export const selectCalendarLoading = (state) => state.calendar.loading;
+export const selectCalendarError = (state) => state.calendar.error;
+export const selectLastFetched = (state) => state.calendar.lastFetched;
+
+export default calendarSlice.reducer;

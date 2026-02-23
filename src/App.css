@@ -1,0 +1,12 @@
+
+@import "tailwindcss";
+#root {
+  margin: 0 auto;
+  text-align: center;
+}
+body {
+    font-family: "Montserrat", sans-serif;
+}
+a , p{
+font-size: 14px;
+}   

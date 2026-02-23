@@ -1,0 +1,25 @@
+{
+  "name": "analytics-backend",
+  "version": "1.0.0",
+  "description": "Analytics Backend API with Google Analytics Integration",
+  "main": "analytics.js",
+  "scripts": {
+    "start": "node analytics.js",
+    "dev": "nodemon analytics.js"
+  },
+  "dependencies": {
+    "@google-analytics/data": "^4.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": ["analytics", "api", "google-analytics", "express"],
+  "author": "devteam.tc",
+  "license": "MIT"
+}
