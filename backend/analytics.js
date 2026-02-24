@@ -7,7 +7,11 @@ const app = express();
 app.use(cors());
 
 const analyticsDataClient = new BetaAnalyticsDataClient({
-  keyFilename: process.env.GA_KEY_PATH,
+  credentials: {
+    client_email: process.env.GA_CLIENT_EMAIL,
+    private_key: process.env.GA_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    project_id: process.env.GA_PROJECT_ID,
+  },
 });
 
 const propertyId = process.env.GA_PROPERTY_ID;
