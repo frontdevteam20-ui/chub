@@ -21,7 +21,7 @@ export default function WebAnalytics({ handleLogout }) {
   
   const [dateRange, setDateRange] = useState(getDefaultDateRange());
 
-  const API_BASE_URL = "http://localhost:4000";
+  const API_BASE_URL = "https://chub-j3ha.onrender.com";
 
   useEffect(() => {
     async function fetchAnalytics() {

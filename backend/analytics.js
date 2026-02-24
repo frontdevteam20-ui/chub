@@ -6,11 +6,17 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
+// Use environment variable for production, file path for local development
 const analyticsDataClient = new BetaAnalyticsDataClient({
-  credentials: JSON.parse(process.env.GA_SERVICE_ACCOUNT || '{}'),
+  credentials: process.env.GA_SERVICE_ACCOUNT ? 
+    JSON.parse(process.env.GA_SERVICE_ACCOUNT) : 
+    undefined,
+  keyFilename: process.env.GA_SERVICE_ACCOUNT ? 
+    undefined : 
+    (process.env.GA_KEY_PATH || './service-account-key.json'),
 });
 
-const propertyId = process.env.GA_PROPERTY_ID;
+const propertyId = process.env.GA_PROPERTY_ID || '495923879';
 
 // Helper: default metrics and dimensions
 const DEFAULT_METRIC = 'activeUsers';

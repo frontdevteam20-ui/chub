@@ -47,7 +47,7 @@ export default function ChartSection({
       if (!dateRange.startDate || !dateRange.endDate) return;
       setLoading(true);
       try {
-        const url = new URL('http://localhost:4000/api/analytics/traffic-acquisition');
+        const url = new URL('https://chub-j3ha.onrender.com/api/analytics/traffic-acquisition');
         url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
         url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
         const response = await fetch(url);

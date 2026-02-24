@@ -71,7 +71,7 @@ function Analytics({ dateRange }) {
       setError(null);
       const metric = selectedMetric;
       const dimensions = DIMENSIONS.join(',');
-      const API_BASE_URL = "http://localhost:4000";
+      const API_BASE_URL = "https://chub-j3ha.onrender.com";
       
       // Build URL with date range if provided
       let url = `${API_BASE_URL}/api/analytics?period=${period}&metric=${metric}&dimensions=${dimensions}`;

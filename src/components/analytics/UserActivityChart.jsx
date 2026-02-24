@@ -36,7 +36,7 @@ export default function UserActivityChart({ dateRange }) {
         const customRangeActive = !!(dateRange && dateRange.startDate && dateRange.endDate);
         setIsCustomRange(customRangeActive);
 
-        const API_BASE_URL = "http://localhost:4000";
+        const API_BASE_URL = "https://chub-j3ha.onrender.com";
         
         // Determine data granularity based on date range
         let granularity = 'month';

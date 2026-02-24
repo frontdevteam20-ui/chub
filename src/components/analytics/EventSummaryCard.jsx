@@ -22,7 +22,7 @@ export default function EventSummaryCard({ dateRange }) {
     try {
       setLoading(true);
       // Build query params if dateRange is provided
-      let url = 'http://localhost:4000/api/analytics/event-count-by-name';
+      let url = 'https://chub-j3ha.onrender.com/api/analytics/event-count-by-name';
       if (dateRange && dateRange.startDate && dateRange.endDate) {
         const params = new URLSearchParams({
           startDate: dateRange.startDate.toISOString().split('T')[0],
