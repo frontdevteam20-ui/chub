@@ -6,11 +6,8 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "cleanUrls": true,
     "rewrites": [
-      {
-        "source": "/admin/**",
-        "destination": "/index.html"
-      },
       {
         "source": "**",
         "destination": "/index.html"

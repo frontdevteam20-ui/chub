@@ -1,5 +1,8 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA3Ln4ByzURA8drIrvka2PYQbPRF_NbVAw",
@@ -12,8 +15,17 @@ const firebaseConfig = {
   measurementId: "G-YSB4T0X2FK"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Initialize Firebase with duplicate app handling
+let app;
+const existingApps = getApps();
+if (existingApps.length > 0) {
+  app = existingApps[0]; // Use existing app
+} else {
+  app = initializeApp(firebaseConfig); // Initialize new app
+}
 
-export { db };
+// Export Firebase services
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const storage = getStorage(app);
+export const rtdb = getDatabase(app);

@@ -13,7 +13,7 @@ export default function ScreenAnalytics({ startDate, endDate }) {
     const fetchPageData = async () => {
       try {
         setLoading(true);
-        let url = 'http://192.168.0.31:4000/api/analytics/page-title-analytics';
+        let url = 'http://localhost:4000/api/analytics/page-title-analytics';
         if (startDate && endDate) {
           const params = new URLSearchParams({
             startDate: startDate.toISOString().split('T')[0],

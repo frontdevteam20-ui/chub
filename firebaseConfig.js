@@ -1,36 +1,43 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getDatabase } from "firebase/database"; // Add this import
 
-// Correct Firebase configuration
+// Correct Firebase configuration for tcerp-newversion project
 const firebaseConfig = {
   apiKey: "AIzaSyA3Ln4ByzURA8drIrvka2PYQbPRF_NbVAw",
-  authDomain: "tech-cloud-erp-1532582683650.firebaseapp.com",
-  databaseURL: "https://tech-cloud-erp-1532582683650.firebaseio.com",
-  projectId: "tech-cloud-erp-1532582683650",
-  storageBucket: "tech-cloud-erp-1532582683650.firebasestorage.app",
+  authDomain: "tcerp-newversion.firebaseapp.com",
+  databaseURL: "https://tcerp-newversion.firebaseio.com",
+  projectId: "tcerp-newversion",
+  storageBucket: "tcerp-newversion.appspot.com",
   messagingSenderId: "595044081279",
   appId: "1:595044081279:web:3320af7c412fbc33bb694a",
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase - FIXED VERSION
+let app;
+const existingApps = getApps();
+if (existingApps.length > 0) {
+  app = existingApps[0]; // Use existing app
+} else {
+  app = initializeApp(firebaseConfig); // Initialize new app
+}
+
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const storage = getStorage(app); // ✅ Ensure storage is exported
-export const rtdb = getDatabase(app); // Export Realtime Database instance
+export const storage = getStorage(app);
+export const rtdb = getDatabase(app);
 
-// Initialize Analytics (only on the client-side)
+// Initialize Analytics (only on the client-side) - DISABLED TEMPORARILY
 let analytics;
 if (typeof window !== "undefined") {
-  isSupported().then((supported) => {
-    if (supported) {
-      analytics = getAnalytics(app);
-    }
-  });
+  // isSupported().then((supported) => {
+  //   if (supported) {
+  //     analytics = getAnalytics(app);
+  //   }
+  // });
 }
 
 export { analytics };

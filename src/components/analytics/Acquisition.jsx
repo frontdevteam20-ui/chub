@@ -63,7 +63,7 @@ export default function Acquisition({ handleLogout }) {
           endDate: dateRange.endDate.toISOString().split('T')[0] 
         });
         
-        const url = new URL('http://192.168.0.31:4000/api/analytics/user-acquisition-summary', window.location.origin);
+        const url = new URL('http://localhost:4000/api/analytics/user-acquisition-summary', window.location.origin);
         url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
         url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
         const res = await fetch(url);
@@ -97,7 +97,7 @@ export default function Acquisition({ handleLogout }) {
           endDate: dateRange.endDate.toISOString().split('T')[0] 
         });
         
-        const url = new URL('http://192.168.0.31:4000/api/analytics/traffic-acquisition', window.location.origin);
+        const url = new URL('http://localhost:4000/api/analytics/traffic-acquisition', window.location.origin);
         url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
         url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
         const res = await fetch(url);
@@ -161,7 +161,7 @@ export default function Acquisition({ handleLogout }) {
         </div>
         <div className="flex-1 max-w-7xl mx-auto p-4">
           <div className="flex justify-between items-center mb-6 mt-5">
-            <h1 className="text-2xl font-bold text-gray-900">Acquisition Analytics123</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Acquisition Analytics</h1>
             <DateRangePicker 
               startDate={dateRange.startDate}
               endDate={dateRange.endDate}

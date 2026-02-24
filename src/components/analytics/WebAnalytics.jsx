@@ -10,20 +10,34 @@ import DateRangePicker from './DateRangePicker';
 export default function WebAnalytics({ handleLogout }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
+  
+  // Set default date range to last 6 months
+  const getDefaultDateRange = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 6);
+    return { startDate, endDate };
+  };
+  
+  const [dateRange, setDateRange] = useState(getDefaultDateRange());
 
-  const API_BASE_URL = "http://192.168.0.31:4000";
+  const API_BASE_URL = "http://localhost:4000";
 
   useEffect(() => {
     async function fetchAnalytics() {
       try {
-        const params = dateRange.startDate && dateRange.endDate ? new URLSearchParams({
-          startDate: dateRange.startDate.toISOString().split('T')[0],
-          endDate: dateRange.endDate.toISOString().split('T')[0]
-        }) : null;
+        console.log('🔄 fetchAnalytics called with dateRange:', dateRange);
+        
+        // Always use date range parameters (default 6 months or user selected)
+        const startDate = dateRange.startDate.toISOString().split('T')[0];
+        const endDate = dateRange.endDate.toISOString().split('T')[0];
+        const params = new URLSearchParams({
+          startDate: startDate,
+          endDate: endDate,
+        });
 
         const response = await fetch(
-          `${API_BASE_URL}/api/analytics/totals${params ? `?${params.toString()}` : ''}`,
+          `${API_BASE_URL}/api/analytics/totals?${params.toString()}`,
           {
             method: 'GET',
             headers: {
@@ -68,6 +82,7 @@ export default function WebAnalytics({ handleLogout }) {
   }, [dateRange.startDate, dateRange.endDate]);
 
   const handleDateRangeChange = ({ startDate, endDate }) => {
+    console.log('🗓️ DateRangePicker onChange called:', { startDate, endDate });
     setDateRange({ startDate, endDate });
   };
 

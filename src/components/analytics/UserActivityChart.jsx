@@ -36,7 +36,7 @@ export default function UserActivityChart({ dateRange }) {
         const customRangeActive = !!(dateRange && dateRange.startDate && dateRange.endDate);
         setIsCustomRange(customRangeActive);
 
-        const API_BASE_URL = "http://192.168.0.31:4000";
+        const API_BASE_URL = "http://localhost:4000";
         
         // Determine data granularity based on date range
         let granularity = 'month';
@@ -58,6 +58,11 @@ export default function UserActivityChart({ dateRange }) {
             granularity = 'day';
             period = 'day';
           }
+        } else {
+          // Default to month view for 6-month range
+          granularity = 'month';
+          period = 'month';
+          setViewMode('month');
         }
         
         setDataGranularity(granularity);
@@ -73,8 +78,16 @@ export default function UserActivityChart({ dateRange }) {
           });
           url += `?${params.toString()}`;
         } else {
-          // Default to year-wise data for no date range
-          url = `${API_BASE_URL}/api/analytics/user-activity-summary?startDate=2024-08-01&endDate=2025-01-31`;
+          // Default to last 6 months
+          const endDate = new Date();
+          const startDate = new Date();
+          startDate.setMonth(startDate.getMonth() - 6);
+          
+          const startDateStr = startDate.toISOString().split('T')[0];
+          const endDateStr = endDate.toISOString().split('T')[0];
+          
+          url += `?startDate=${startDateStr}&endDate=${endDateStr}`;
+          console.log('📅 Default 6-month range:', startDateStr, 'to', endDateStr);
         }
 
         const response = await fetch(url, {
@@ -101,9 +114,9 @@ export default function UserActivityChart({ dateRange }) {
           return;
         }
 
-        // Process data points for chart - format dates as Date objects for Google Charts
+        // Process data points for chart - format dates for Google Charts
         const rows = apiData.map(item => {
-          // Parse YYYYMMDD format to Date object
+          // Parse YYYYMMDD format to Date object and convert to string format
           const dateStr = item.date;
           console.log('🗓️ Processing date string:', dateStr);
           if (dateStr && dateStr.length === 8) {
@@ -111,9 +124,14 @@ export default function UserActivityChart({ dateRange }) {
             const month = parseInt(dateStr.substring(4, 6)) - 1; // JS months are 0-indexed
             const day = parseInt(dateStr.substring(6, 8));
             const date = new Date(year, month, day);
-            const result = date && !isNaN(date.getTime()) ? [date, parseInt(item.activeUsers) || 0] : null;
-            console.log('📅 Converted date:', date, '-> result:', result);
-            return result;
+            
+            if (date && !isNaN(date.getTime())) {
+              // Format date as YYYY-MM-DD string for Google Charts
+              const formattedDate = date.toISOString().split('T')[0];
+              const result = [formattedDate, parseInt(item.activeUsers) || 0];
+              console.log('📅 Converted date:', date, '-> formatted:', formattedDate, '-> result:', result);
+              return result;
+            }
           }
           console.log('❌ Invalid date format:', dateStr);
           return null;
@@ -258,7 +276,7 @@ export default function UserActivityChart({ dateRange }) {
                     bottom: 80 
                   },
                   hAxis: {
-                    format: viewMode === 'year' ? 'yyyy' : viewMode === 'month' ? 'MMM d' : 'MMM d',
+                    format: viewMode === 'year' ? 'yyyy' : viewMode === 'month' ? 'MMM yy' : 'MMM d',
                     textStyle: { 
                       color: "#6b7280", 
                       fontSize: 12,
@@ -267,7 +285,9 @@ export default function UserActivityChart({ dateRange }) {
                     gridlines: { 
                       color: "transparent" 
                     },
-                    baselineColor: "#f3f4f6"
+                    baselineColor: "#f3f4f6",
+                    slantedText: true,
+                    slantedTextAngle: 45
                   },
                   vAxis: {
                     textStyle: { 

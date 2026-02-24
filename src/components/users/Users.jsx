@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, serverTimestamp, deleteDoc, addDoc } from "firebase/firestore";
 import { getAuth, createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import Navbar from '../Navbar';
@@ -8,22 +7,7 @@ import HamburgerMenu from "../HamburgerMenu";
 import UserForm from "./UserForm";
 import UserList from "./UserList";
 import UserSearch from "./UserSearch";
-
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyA3Ln4ByzURA8drIrvka2PYQbPRF_NbVAw",
-  authDomain: "tech-cloud-erp-1532582683650.firebaseapp.com",
-  databaseURL: "https://tech-cloud-erp-1532582683650.firebaseio.com",
-  projectId: "tech-cloud-erp-1532582683650",
-  storageBucket: "tech-cloud-erp-1532582683650.firebasestorage.app",
-  messagingSenderId: "595044081279",
-  appId: "1:595044081279:web:3320af7c412fbc33bb694a"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+import { db, auth } from '../../firebaseConfig';
 
 const USERS_COLLECTION = 'users_manage';
 

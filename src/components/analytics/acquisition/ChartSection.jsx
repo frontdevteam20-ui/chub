@@ -47,7 +47,7 @@ export default function ChartSection({
       if (!dateRange.startDate || !dateRange.endDate) return;
       setLoading(true);
       try {
-        const url = new URL('/api/analytics/traffic-acquisition', window.location.origin);
+        const url = new URL('http://localhost:4000/api/analytics/traffic-acquisition');
         url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
         url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
         const response = await fetch(url);
@@ -57,55 +57,45 @@ export default function ChartSection({
           throw new Error('No data returned from API');
         }
 
-        // The API does not provide time-series data. We will simulate it for now.
-        // We group data by session source and assign it to dates.
-        const sourceMap = {
-          'google': 'Organic Search',
-          '(direct)': 'Direct',
-          'bing': 'Organic Search',
-          'facebook.com': 'Organic Social',
-          'l.instagram.com': 'Organic Social',
-          't.co': 'Organic Social',
-        };
+        console.log('📊 ChartSection API Response:', apiData);
 
-        const aggregatedData = apiData.rows.reduce((acc, row) => {
-          const source = sourceMap[row.sessionSource] || 'Referral';
-          if (!acc[source]) {
-            acc[source] = 0;
+        // Process real data from API
+        const processedChartData = apiData.rows.map(row => ({
+          date: row.date,
+          'Organic Search': row.channel === 'Organic Search' ? parseInt(row.totalUsers) : 0,
+          'Direct': row.channel === 'Direct' ? parseInt(row.totalUsers) : 0,
+          'Referral': row.channel === 'Referral' ? parseInt(row.totalUsers) : 0,
+          'Organic Social': row.channel === 'Organic Social' ? parseInt(row.totalUsers) : 0,
+          'Unassigned': row.channel === 'Unassigned' ? parseInt(row.totalUsers) : 0,
+          Total: parseInt(row.totalUsers) || 0
+        }));
+
+        // Group by date and sum values for each channel
+        const groupedData = {};
+        processedChartData.forEach(item => {
+          if (!groupedData[item.date]) {
+            groupedData[item.date] = {
+              date: item.date,
+              'Organic Search': 0,
+              'Direct': 0,
+              'Referral': 0,
+              'Organic Social': 0,
+              'Unassigned': 0,
+              Total: 0
+            };
           }
-          acc[source] += parseInt(row.totalUsers, 10);
-          return acc;
-        }, {});
-
-        // Since the API does not provide time-series data, we'll simulate it.
-        // We create a date range and distribute the aggregated data across it.
-        const getDatesInRange = (start, end) => {
-          const dates = [];
-          let currentDate = new Date(start);
-          while (currentDate <= end) {
-            dates.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          return dates;
-        };
-
-        const dates = getDatesInRange(dateRange.startDate, dateRange.endDate).map(d => d.toISOString().split('T')[0]);
-
-        const categories = ['Organic Search', 'Direct', 'Referral', 'Organic Social', 'Unassigned'];
-        const processedChartData = dates.map(date => {
-          const dataPoint = { date };
-          let total = 0;
-          categories.forEach(cat => {
-            // Distribute the aggregated value over the time period with some randomness
-            const value = Math.round((aggregatedData[cat] || 0) / dates.length * (0.8 + Math.random() * 0.4));
-            dataPoint[cat] = value;
-            total += value;
-          });
-          dataPoint.Total = total;
-          return dataPoint;
+          groupedData[item.date]['Organic Search'] += item['Organic Search'];
+          groupedData[item.date]['Direct'] += item['Direct'];
+          groupedData[item.date]['Referral'] += item['Referral'];
+          groupedData[item.date]['Organic Social'] += item['Organic Social'];
+          groupedData[item.date]['Unassigned'] += item['Unassigned'];
+          groupedData[item.date].Total += item.Total;
         });
 
-        setChartData(processedChartData);
+        const finalChartData = Object.values(groupedData).sort((a, b) => new Date(a.date) - new Date(b.date));
+        console.log('📈 ChartSection Processed Data:', finalChartData);
+
+        setChartData(finalChartData);
 
       } catch (err) {
         setError('Failed to fetch or process data');
@@ -154,7 +144,7 @@ export default function ChartSection({
                 padding={{ left: 20, right: 20 }}
                 tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}
               />
-              <YAxis domain={[0, 200]} ticks={[0, 50, 100, 150, 200]} />
+              <YAxis domain={['dataMin', 'dataMax']} />
               <Tooltip content={<CustomTooltip />} />
               <Legend iconType="circle" iconSize={10} wrapperStyle={{ bottom: -10, left: 20 }} />
               <defs>

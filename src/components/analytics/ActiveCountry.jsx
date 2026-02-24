@@ -14,7 +14,7 @@ const ActiveCountry = ({ startDate, endDate }) => {
       setLoading(true);
       setError(null);
       try {
-        let url = "http://192.168.0.31:4000/api/analytics/country-active-users";
+        let url = "http://localhost:4000/api/analytics/country-active-users";
         if (startDate && endDate) {
           const params = new URLSearchParams({
             startDate: startDate.toISOString().split('T')[0],

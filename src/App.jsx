@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react'
-import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { useEffect } from 'react';
 import reactLogo from './assets/react.svg';
@@ -15,22 +14,8 @@ import UserRoleManagement from './components/UserRoleManagement';
 import Footer from './components/Footer';
 import { RBACProvider, useRBAC } from './contexts/RBACContext';
 import { ref as dbRef, push as dbPush, set as dbSet } from 'firebase/database';
-import { rtdb } from '../firebaseConfig';
+import { rtdb, auth } from '../firebaseConfig';
 import AppRoutes from './AppRoutes';
-
-// TODO: Replace with your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyA3Ln4ByzURA8drIrvka2PYQbPRF_NbVAw",
-  authDomain: "tech-cloud-erp-1532582683650.firebaseapp.com",
-  databaseURL: "https://tech-cloud-erp-1532582683650.firebaseio.com",
-  projectId: "tech-cloud-erp-1532582683650",
-  storageBucket: "tech-cloud-erp-1532582683650.firebasestorage.app",
-  messagingSenderId: "595044081279",
-  appId: "1:595044081279:web:3320af7c412fbc33bb694a"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
 function App() {
   const [user, setUser] = useState(null);
