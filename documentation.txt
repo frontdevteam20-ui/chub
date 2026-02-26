@@ -1,0 +1,1425 @@
+# Analytics Dashboard Documentation
+
+## Project Overview
+This analytics dashboard provides real-time Google Analytics data visualization with dynamic date range filtering, country-wise user distribution, traffic acquisition analysis, and comprehensive metrics tracking.
+
+---
+
+## Backend Architecture
+
+### Technology Stack
+- **Framework**: Express.js (Node.js)
+- **Google Analytics API**: Google Analytics Data API v1beta
+- **Authentication**: Service Account with JSON credentials
+- **CORS**: Enabled for cross-origin requests
+- **Environment**: dotenv for configuration management
+
+### Authentication Setup
+```javascript
+// Local Development - File-based authentication
+const analyticsDataClient = new BetaAnalyticsDataClient({
+  keyFilename: process.env.GA_KEY_PATH || './service-account-key.json',
+});
+
+// Production - Environment variable authentication
+const analyticsDataClient = new BetaAnalyticsDataClient({
+  credentials: JSON.parse(process.env.GA_SERVICE_ACCOUNT),
+});
+```
+
+### Environment Variables
+- `GA_PROPERTY_ID`: Google Analytics Property ID (e.g., "495923879")
+- `GA_KEY_PATH`: Path to service account key file (local development)
+- `GA_SERVICE_ACCOUNT`: JSON string of service account credentials (production)
+- `PORT`: Server port (default: 4000)
+
+---
+
+## API Endpoints
+
+### 1. Total Analytics Summary
+**Endpoint**: `GET /api/analytics/totals`
+**Purpose**: Returns aggregated metrics for specified date range
+**Parameters**:
+- `startDate` (YYYY-MM-DD format)
+- `endDate` (YYYY-MM-DD format)
+
+**Response Structure**:
+```json
+{
+  "totalViews": 1234,
+  "totalUsers": 567,
+  "totalSessions": 890,
+  "totalEvents": 234
+}
+```
+
+**Calculation Method**:
+```javascript
+// Google Analytics API Request
+const response = await analyticsDataClient.runReport({
+  property: `properties/${propertyId}`,
+  dateRanges: [dateRange],
+  metrics: [
+    { name: 'screenPageViews' },
+    { name: 'activeUsers' },
+    { name: 'sessions' },
+    { name: 'events' }
+  ]
+});
+
+// Data Processing
+const processedData = {
+  totalViews: parseInt(response.rows[0]?.metricValues[0]?.value) || 0,
+  totalUsers: parseInt(response.rows[0]?.metricValues[1]?.value) || 0,
+  totalSessions: parseInt(response.rows[0]?.metricValues[2]?.value) || 0,
+  totalEvents: parseInt(response.rows[0]?.metricValues[3]?.value) || 0
+};
+```
+
+### 2. User Activity Over Time
+**Endpoint**: `GET /api/analytics/user-activity-summary`
+**Purpose**: Returns time-series data of user activity
+**Parameters**: startDate, endDate
+
+**Response Structure**:
+```json
+[
+  {
+    "date": "2024-02-24",
+    "activeUsers": 123
+  }
+]
+```
+
+**Calculation Method**:
+```javascript
+// Daily granularity for date ranges
+const response = await analyticsDataClient.runReport({
+  property: `properties/${propertyId}`,
+  dateRanges: [dateRange],
+  dimensions: [{ name: 'date' }],
+  metrics: [{ name: 'activeUsers' }]
+});
+
+// Process each date row
+apiData.rows.map(row => ({
+  date: row.dimensionValues[0].value,
+  activeUsers: parseInt(row.metricValues[0].value) || 0
+}));
+```
+
+### 3. Country-wise Active Users
+**Endpoint**: `GET /api/analytics/country-active-users`
+**Purpose**: Returns user distribution by country
+**Parameters**: startDate, endDate
+
+**Response Structure**:
+```json
+[
+  {
+    "country": "IN",
+    "countryName": "India",
+    "activeUsers": 513
+  }
+]
+```
+
+**Calculation Method**:
+```javascript
+const response = await analyticsDataClient.runReport({
+  property: `properties/${propertyId}`,
+  dateRanges: [dateRange],
+  dimensions: [{ name: 'country' }],
+  metrics: [{ name: 'activeUsers' }]
+});
+
+// Map country codes to full names
+apiData.rows.map(row => ({
+  country: row.dimensionValues[0].value,
+  countryName: getCountryName(row.dimensionValues[0].value),
+  activeUsers: parseInt(row.metricValues[0].value) || 0
+}));
+```
+
+### 4. Event Count by Name
+**Endpoint**: `GET /api/analytics/event-count-by-name`
+**Purpose**: Returns event tracking data
+**Parameters**: startDate, endDate
+
+**Response Structure**:
+```json
+[
+  {
+    "eventName": "page_view",
+    "eventCount": 18450
+  }
+]
+```
+
+**Calculation Method**:
+```javascript
+const response = await analyticsDataClient.runReport({
+  property: `properties/${propertyId}`,
+  dateRanges: [dateRange],
+  dimensions: [{ name: 'eventName' }],
+  metrics: [{ name: 'eventCount' }]
+});
+
+// Aggregate by event name
+apiData.rows.map(row => ({
+  eventName: row.dimensionValues[0].value,
+  eventCount: parseInt(row.metricValues[0].value) || 0
+}));
+```
+
+### 5. Page Title Analytics
+**Endpoint**: `GET /api/analytics/page-title-analytics`
+**Purpose**: Returns page-wise analytics data
+**Parameters**: startDate, endDate
+
+**Response Structure**:
+```json
+[
+  {
+    "pageTitle": "Home",
+    "views": 5432,
+    "activeUsers": 2341,
+    "avgEngagementTimePerUser": 145,
+    "bounceRate": 0.35,
+    "bounceRateFormatted": "35.0%",
+    "eventCount": 89,
+    "viewsPerActiveUser": 2.32
+  }
+]
+```
+
+**Calculation Method**:
+```javascript
+const response = await analyticsDataClient.runReport({
+  property: `properties/${propertyId}`,
+  dateRanges: [dateRange],
+  dimensions: [{ name: 'pageTitle' }],
+  metrics: [
+    { name: 'screenPageViews' },
+    { name: 'activeUsers' },
+    { name: 'userEngagementDuration' },
+    { name: 'bounceRate' },
+    { name: 'events' }
+  ]
+});
+
+// Calculate derived metrics
+apiData.rows.map(row => ({
+  pageTitle: row.dimensionValues[0].value,
+  views: parseInt(row.metricValues[0].value) || 0,
+  activeUsers: parseInt(row.metricValues[1].value) || 0,
+  avgEngagementTimePerUser: parseInt(row.metricValues[2].value) || 0,
+  bounceRate: parseFloat(row.metricValues[3].value) || 0,
+  bounceRateFormatted: `${((parseFloat(row.metricValues[3]?.value) || 0) * 100).toFixed(1)}%`,
+  eventCount: parseInt(row.metricValues[4].value) || 0,
+  viewsPerActiveUser: row.metricValues[0] && row.metricValues[1] 
+    ? (parseInt(row.metricValues[0].value) / parseInt(row.metricValues[1].value)).toFixed(2)
+    : 0
+}));
+```
+
+### 6. User Acquisition Summary
+**Endpoint**: `GET /api/analytics/user-acquisition-summary`
+**Purpose**: Returns user acquisition metrics
+**Parameters**: startDate, endDate
+
+**Response Structure**:
+```json
+{
+  "sessions": 1234,
+  "averageEngagementTimePerActiveUser": 145.67,
+  "totalKeyEvents": 89
+}
+```
+
+### 7. Traffic Acquisition
+**Endpoint**: `GET /api/analytics/traffic-acquisition`
+**Purpose**: Returns traffic source analysis
+**Parameters**: startDate, endDate
+
+**Response Structure**:
+```json
+[
+  {
+    "channel": "Organic Search",
+    "date": "2024-02-24",
+    "totalUsers": 123,
+    "sessions": 145,
+    "averageSessionDuration": 234.56,
+    "bounceRate": 0.35
+  }
+]
+```
+
+---
+
+## Frontend Architecture
+
+### Technology Stack
+- **Framework**: React 18 with Vite
+- **Charts**: Google Charts, Recharts
+- **State Management**: React Hooks (useState, useEffect)
+- **HTTP Client**: Fetch API
+- **Styling**: Tailwind CSS
+
+### Component Structure
+
+#### 1. WebAnalytics.jsx
+**Purpose**: Main analytics dashboard component
+**Features**:
+- Default 6-month date range
+- Dynamic date range picker
+- Real-time API updates
+- Responsive design
+
+**Key Functions**:
+```javascript
+// Default date range (last 6 months)
+const getDefaultDateRange = () => {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 6);
+  return { startDate, endDate };
+};
+
+// API call with date parameters
+const startDate = dateRange.startDate.toISOString().split('T')[0];
+const endDate = dateRange.endDate.toISOString().split('T')[0];
+const params = new URLSearchParams({ startDate, endDate });
+```
+
+#### 2. Analytics.jsx
+**Purpose**: Comprehensive metrics display
+**Features**:
+- Multiple metric selection (Users, Sessions, Events, etc.)
+- Period selection (Day, Week, Month)
+- Dynamic chart updates
+- Data export functionality
+
+#### 3. ActiveCountry.jsx
+**Purpose**: Geographic user distribution
+**Features**:
+- Google GeoChart integration
+- Country-wise user counts
+- Interactive map visualization
+- Responsive design
+
+**Data Processing**:
+```javascript
+// Format for Google GeoChart
+const geoChartData = [["Country", "Active Users"]];
+data.forEach(item => {
+  geoChartData.push([item.countryName || item.country, item.activeUsers]);
+});
+```
+
+#### 4. UserActivityChart.jsx
+**Purpose**: Time-series user activity visualization
+**Features**:
+- Default 6-month view
+- Dynamic granularity (Day/Week/Month)
+- Google Charts integration
+- Responsive design
+
+**Date Formatting**:
+```javascript
+// Convert YYYYMMDD to Date object for Google Charts
+const dateStr = item.date;
+const year = parseInt(dateStr.substring(0, 4));
+const month = parseInt(dateStr.substring(4, 6)) - 1;
+const day = parseInt(dateStr.substring(6, 8));
+const date = new Date(year, month, day);
+
+// Format as YYYY-MM-DD string
+const formattedDate = date.toISOString().split('T')[0];
+```
+
+#### 5. EventSummaryCard.jsx
+**Purpose**: Event tracking visualization
+**Features**:
+- Sparkline charts
+- Event count display
+- Real-time updates
+- Animated transitions
+
+#### 6. ScreenAnalytics.jsx
+**Purpose**: Page performance analytics
+**Features**:
+- Page-wise metrics
+- Engagement time tracking
+- Bounce rate visualization
+- Responsive tables
+
+#### 7. Acquisition.jsx
+**Purpose**: Traffic source analysis
+**Features**:
+- Channel-wise breakdown
+- Session metrics
+- Acquisition trends
+- Interactive charts
+
+#### 8. ChartSection.jsx
+**Purpose**: Traffic acquisition time-series chart
+**Features**:
+- Multi-line charts
+- Channel comparison
+- Dynamic date filtering
+- Responsive design
+
+**Data Processing**:
+```javascript
+// Group by date and channel
+const groupedData = {};
+processedChartData.forEach(item => {
+  if (!groupedData[item.date]) {
+    groupedData[item.date] = {
+      'Organic Search': 0,
+      'Direct': 0,
+      'Referral': 0,
+      'Organic Social': 0,
+      'Unassigned': 0,
+      Total: 0
+    };
+  }
+  groupedData[item.date][item.channel] += item.totalUsers;
+  groupedData[item.date].Total += item.totalUsers;
+});
+```
+
+---
+
+## Data Calculations
+
+### Total Users Calculation
+```javascript
+// From Google Analytics API
+const totalUsers = parseInt(row.metricValues[1]?.value) || 0;
+
+// Aggregation across multiple rows
+const totalUsersSum = data.reduce((sum, item) => sum + item.activeUsers, 0);
+```
+
+### Total Views Calculation
+```javascript
+// Page views metric
+const totalViews = parseInt(row.metricValues[0]?.value) || 0;
+
+// Sum across all pages
+const totalViewsSum = data.reduce((sum, item) => sum + item.views, 0);
+```
+
+### Total Sessions Calculation
+```javascript
+// Sessions metric from GA
+const totalSessions = parseInt(row.metricValues[2]?.value) || 0;
+
+// Aggregate across time period
+const totalSessionsSum = data.reduce((sum, item) => sum + item.sessions, 0);
+```
+
+### Total Events Calculation
+```javascript
+// Events metric from GA
+const totalEvents = parseInt(row.metricValues[3]?.value) || 0;
+
+// Sum across all event types
+const totalEventsSum = data.reduce((sum, item) => sum + item.eventCount, 0);
+```
+
+### Bounce Rate Calculation
+```javascript
+// GA returns bounce rate as decimal (0.35 = 35%)
+const bounceRate = parseFloat(row.metricValues[3]?.value) || 0;
+const bounceRateFormatted = `${(bounceRate * 100).toFixed(1)}%`;
+
+// Average bounce rate
+const avgBounceRate = data.reduce((sum, item) => sum + item.bounceRate, 0) / data.length;
+```
+
+### Engagement Time Calculation
+```javascript
+// User engagement duration in seconds
+const engagementTime = parseInt(row.metricValues[2]?.value) || 0;
+
+// Average engagement time
+const avgEngagementTime = data.reduce((sum, item) => sum + item.avgEngagementTimePerUser, 0) / data.length;
+```
+
+### Views Per Active User Calculation
+```javascript
+// Ratio calculation
+const viewsPerActiveUser = views / activeUsers;
+
+// Handle division by zero
+const viewsPerActiveUser = activeUsers > 0 ? (views / activeUsers).toFixed(2) : 0;
+```
+
+---
+
+## Deployment Configuration
+
+### Local Development
+```bash
+# Backend
+cd backend && node analytics.js
+
+# Frontend
+npm run dev
+
+# URLs
+Backend: http://localhost:4000
+Frontend: http://localhost:5173
+```
+
+### Production (Render)
+```bash
+# Environment Variables
+GA_SERVICE_ACCOUNT={"type":"service_account","project_id":"...",...}
+GA_PROPERTY_ID=495923879
+
+# URLs
+Backend: https://chub-j3ha.onrender.com
+Frontend: https://your-domain.com
+```
+
+---
+
+## Key Features Implemented
+
+### ✅ Dynamic Date Range Filtering
+- All components support custom date ranges
+- Default 6-month view for historical context
+- Real-time updates on date change
+- Proper date formatting for APIs
+
+### ✅ Real Google Analytics Integration
+- No mock data - 100% real GA data
+- Service account authentication
+- Error handling for API failures
+- Graceful fallbacks for missing data
+
+### ✅ Responsive Design
+- Mobile-friendly layouts
+- Adaptive chart sizing
+- Touch-friendly interactions
+- Optimized performance
+
+### ✅ Data Visualization
+- Multiple chart types (Line, Bar, Geo, Pie)
+- Interactive tooltips and legends
+- Animated transitions
+- Color-coded metrics
+
+### ✅ Performance Optimization
+- Efficient API calls
+- Data caching strategies
+- Lazy loading components
+- Optimized re-renders
+
+---
+
+## Security Considerations
+
+### 🔒 Service Account Security
+- Private key stored in environment variables (production)
+- File-based authentication (local development only)
+- No hardcoded credentials in source code
+- Git ignore rules for sensitive files
+
+### 🔒 CORS Configuration
+- Enabled for specific origins in production
+- Development allows all origins
+- Proper headers for API access
+- Secure cross-origin requests
+
+---
+
+## Troubleshooting Guide
+
+### Common Issues & Solutions
+
+#### 1. "client_email field missing" Error
+**Cause**: GA_SERVICE_ACCOUNT not properly formatted
+**Solution**: Ensure complete JSON structure in environment variable
+
+#### 2. Port 4000 already in use
+**Cause**: Previous backend instance still running
+**Solution**: Kill existing process and restart
+
+#### 3. No data returned
+**Cause**: Incorrect date range or GA property ID
+**Solution**: Verify GA_PROPERTY_ID and date format
+
+#### 4. CORS errors
+**Cause**: Frontend and backend on different origins
+**Solution**: Proper CORS configuration in backend
+
+---
+
+## Future Enhancements
+
+### 🚀 Planned Features
+- Real-time WebSocket updates
+- Advanced filtering options
+- Data export functionality
+- Custom dashboard configurations
+- Multi-property support
+- Advanced segmentation
+
+### 📊 Performance Improvements
+- API response caching
+- Database integration for historical data
+- Optimized query strategies
+- Background data synchronization
+
+---
+
+## Contact & Support
+
+For technical issues or questions:
+- Check console logs for detailed error messages
+- Verify environment variables are properly set
+- Ensure Google Analytics property has sufficient data
+- Review API rate limits and quotas
+
+---
+
+*Last Updated: February 24, 2026*
+*Version: 1.0.0*
+
+---
+
+## API Request Examples
+
+### Complete API Call Example
+```javascript
+// Full Google Analytics API request structure
+const response = await analyticsDataClient.runReport({
+  property: `properties/${propertyId}`,
+  dateRanges: [{
+    startDate: '2024-02-24',
+    endDate: '2025-02-24'
+  }],
+  dimensions: [
+    { name: 'date' },
+    { name: 'country' },
+    { name: 'pageTitle' },
+    { name: 'eventName' }
+  ],
+  metrics: [
+    { name: 'activeUsers' },
+    { name: 'screenPageViews' },
+    { name: 'sessions' },
+    { name: 'userEngagementDuration' },
+    { name: 'bounceRate' },
+    { name: 'events' }
+  ],
+  limit: 10000
+});
+```
+
+### Error Handling Patterns
+```javascript
+// Comprehensive error handling for all API calls
+try {
+  const response = await analyticsDataClient.runReport(request);
+  
+  if (!response.rows || response.rows.length === 0) {
+    return { error: 'No data available for selected date range' };
+  }
+  
+  return processResponse(response.rows);
+  
+} catch (error) {
+  console.error('Google Analytics API Error:', error);
+  
+  if (error.code === 'PERMISSION_DENIED') {
+    return { error: 'Insufficient permissions for Google Analytics' };
+  }
+  
+  if (error.code === 'INVALID_ARGUMENT') {
+    return { error: 'Invalid date range or property ID' };
+  }
+  
+  return { error: error.message };
+}
+```
+
+---
+
+## Performance Metrics Deep Dive
+
+### User Engagement Calculations
+```javascript
+// Advanced engagement metrics
+const calculateEngagementMetrics = (data) => {
+  const totalUsers = data.reduce((sum, item) => sum + item.activeUsers, 0);
+  const totalSessions = data.reduce((sum, item) => sum + item.sessions, 0);
+  const totalEngagementTime = data.reduce((sum, item) => sum + (item.avgEngagementTimePerUser * item.activeUsers), 0);
+  
+  return {
+    totalUsers,
+    totalSessions,
+    averageEngagementTime: totalUsers > 0 ? (totalEngagementTime / totalUsers).toFixed(2) : 0,
+    sessionsPerUser: totalUsers > 0 ? (totalSessions / totalUsers).toFixed(2) : 0,
+    engagementRate: totalSessions > 0 ? ((totalUsers / totalSessions) * 100).toFixed(2) : 0
+  };
+};
+```
+
+### Traffic Source Analysis
+```javascript
+// Channel performance analysis
+const analyzeTrafficSources = (data) => {
+  const channelMetrics = {};
+  
+  data.forEach(item => {
+    if (!channelMetrics[item.channel]) {
+      channelMetrics[item.channel] = {
+        totalUsers: 0,
+        totalSessions: 0,
+        totalDuration: 0,
+        avgBounceRate: 0,
+        count: 0
+      };
+    }
+    
+    const channel = channelMetrics[item.channel];
+    channel.totalUsers += item.totalUsers;
+    channel.totalSessions += item.sessions;
+    channel.totalDuration += item.averageSessionDuration;
+    channel.avgBounceRate += item.bounceRate;
+    channel.count++;
+  });
+  
+  // Calculate averages for each channel
+  Object.keys(channelMetrics).forEach(channel => {
+    const metrics = channelMetrics[channel];
+    metrics.avgSessionDuration = metrics.count > 0 ? (metrics.totalDuration / metrics.count).toFixed(2) : 0;
+    metrics.avgBounceRate = metrics.count > 0 ? (metrics.avgBounceRate / metrics.count).toFixed(4) : 0;
+    metrics.usersPerSession = metrics.totalSessions > 0 ? (metrics.totalUsers / metrics.totalSessions).toFixed(2) : 0;
+  });
+  
+  return channelMetrics;
+};
+```
+
+### Geographic Distribution Analysis
+```javascript
+// Country-wise user distribution with advanced metrics
+const analyzeGeographicData = (data) => {
+  const totalUsers = data.reduce((sum, item) => sum + item.activeUsers, 0);
+  const countryCounts = data.length;
+  
+  // Calculate percentage distribution
+  const countryDistribution = data.map(item => ({
+    ...item,
+    percentage: totalUsers > 0 ? ((item.activeUsers / totalUsers) * 100).toFixed(2) : 0,
+    rank: 0 // Will be set after sorting
+  }));
+  
+  // Sort by user count and assign ranks
+  countryDistribution.sort((a, b) => b.activeUsers - a.activeUsers);
+  countryDistribution.forEach((item, index) => {
+    item.rank = index + 1;
+  });
+  
+  return {
+    countries: countryDistribution,
+    totalCountries: countryCounts,
+    topCountries: countryDistribution.slice(0, 10),
+    geographicDiversity: (countryCounts / totalUsers).toFixed(2)
+  };
+};
+```
+
+---
+
+## Frontend State Management Patterns
+
+### Advanced Date Range Management
+```javascript
+// Comprehensive date range state management
+const useDateRange = (initialMonths = 6) => {
+  const [dateRange, setDateRange] = useState(() => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - initialMonths);
+    return { startDate, endDate };
+  });
+  
+  const [customRangeActive, setCustomRangeActive] = useState(false);
+  
+  const updateDateRange = useCallback((newRange) => {
+    setDateRange(newRange);
+    setCustomRangeActive(true);
+  }, []);
+  
+  const resetToDefault = useCallback(() => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - initialMonths);
+    setDateRange({ startDate, endDate });
+    setCustomRangeActive(false);
+  }, [initialMonths]);
+  
+  return {
+    dateRange,
+    customRangeActive,
+    updateDateRange,
+    resetToDefault
+  };
+};
+```
+
+### Data Fetching Hook Pattern
+```javascript
+// Reusable data fetching hook for analytics
+const useAnalyticsData = (endpoint, dependencies = []) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const result = await response.json();
+      setData(result);
+      
+    } catch (err) {
+      setError(err.message);
+      console.error(`Analytics API Error [${endpoint}]:`, err);
+    } finally {
+      setLoading(false);
+    }
+  }, [endpoint]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, ...dependencies]);
+  
+  return { data, loading, error, refetch: fetchData };
+};
+```
+
+---
+
+## Optimization Strategies
+
+### API Request Optimization
+```javascript
+// Efficient API request batching
+class AnalyticsOptimizer {
+  constructor() {
+    this.cache = new Map();
+    this.requestQueue = [];
+    this.batchSize = 10;
+    this.debounceTime = 300;
+  }
+  
+  // Batch multiple requests
+  async batchRequests(requests) {
+    const batchedRequests = [];
+    for (let i = 0; i < requests.length; i += this.batchSize) {
+      batchedRequests.push(requests.slice(i, i + this.batchSize));
+    }
+    
+    const results = [];
+    for (const batch of batchedRequests) {
+      const batchResult = await Promise.all(batch.map(req => this.executeRequest(req)));
+      results.push(...batchResult);
+    }
+    
+    return results;
+  }
+  
+  // Debounce rapid requests
+  debounceRequest(request) {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      this.executeRequest(request);
+    }, this.debounceTime);
+  }
+}
+```
+
+### Frontend Performance Optimization
+```javascript
+// Virtual scrolling for large datasets
+const useVirtualizedList = (items, itemHeight = 50) => {
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(400);
+  
+  const visibleStart = Math.floor(scrollTop / itemHeight);
+  const visibleEnd = Math.min(
+    visibleStart + Math.ceil(containerHeight / itemHeight) + 1,
+    items.length
+  );
+  
+  const visibleItems = items.slice(visibleStart, visibleEnd);
+  
+  return {
+    visibleItems,
+    totalHeight: items.length * itemHeight,
+    scrollToIndex: (index) => {
+      setScrollTop(index * itemHeight);
+    }
+  };
+};
+
+// Memoized chart components
+const MemoizedChart = React.memo(({ data, config }) => {
+  const chartData = useMemo(() => {
+    return processChartData(data, config);
+  }, [data, config]);
+  
+  return <ChartComponent data={chartData} />;
+});
+```
+
+---
+
+## Testing Strategy
+
+### Unit Testing Examples
+```javascript
+// API endpoint testing
+describe('Analytics API', () => {
+  test('should return total analytics for valid date range', async () => {
+    const response = await request(app)
+      .get('/api/analytics/totals')
+      .query({ startDate: '2024-01-01', endDate: '2024-01-31' })
+      .expect(200);
+    
+    expect(response.body).toHaveProperty('totalViews');
+    expect(response.body).toHaveProperty('totalUsers');
+    expect(response.body).toHaveProperty('totalSessions');
+    expect(response.body).toHaveProperty('totalEvents');
+  });
+  
+  test('should handle invalid date range gracefully', async () => {
+    const response = await request(app)
+      .get('/api/analytics/totals')
+      .query({ startDate: 'invalid-date' })
+      .expect(400);
+    
+    expect(response.body).toHaveProperty('error');
+  });
+});
+
+// Frontend component testing
+describe('WebAnalytics Component', () => {
+  test('should render with default 6-month date range', () => {
+    render(<WebAnalytics />);
+    
+    expect(screen.getByText('Web Analytics')).toBeInTheDocument();
+    // Check if date range shows approximately 6 months
+  });
+  
+  test('should update data when date range changes', async () => {
+    const { rerender } = render(<WebAnalytics />);
+    
+    const startDateInput = screen.getByLabelText('Start Date');
+    const endDateInput = screen.getByLabelText('End Date');
+    
+    fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
+    fireEvent.change(endDateInput, { target: { value: '2024-01-31' } });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+### Integration Testing
+```javascript
+// End-to-end testing with real data
+describe('Analytics Integration', () => {
+  test('should fetch and display real Google Analytics data', async () => {
+    // Mock Google Analytics API
+    const mockGAResponse = {
+      rows: [
+        {
+          dimensionValues: [{ value: '2024-02-24' }],
+          metricValues: [{ value: '1234' }, { value: '567' }, { value: '890' }, { value: '234' }]
+        }
+      ]
+    };
+    
+    analyticsDataClient.runReport.mockResolvedValue(mockGAResponse);
+    
+    const { getByText } = render(<WebAnalytics />);
+    
+    await waitFor(() => {
+      expect(getByText('1,234')).toBeInTheDocument(); // Total users
+      expect(getByText('5,432')).toBeInTheDocument(); // Total views
+    });
+  });
+});
+```
+
+---
+
+## Monitoring & Debugging
+
+### Performance Monitoring
+```javascript
+// API performance tracking
+const apiPerformanceTracker = {
+  requests: [],
+  
+  trackRequest(endpoint, startTime, endTime, success) {
+    this.requests.push({
+      endpoint,
+      duration: endTime - startTime,
+      success,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Keep only last 100 requests
+    if (this.requests.length > 100) {
+      this.requests = this.requests.slice(-100);
+    }
+  },
+  
+  getAverageResponseTime(endpoint) {
+    const endpointRequests = this.requests.filter(req => req.endpoint === endpoint);
+    if (endpointRequests.length === 0) return 0;
+    
+    const totalTime = endpointRequests.reduce((sum, req) => sum + req.duration, 0);
+    return totalTime / endpointRequests.length;
+  },
+  
+  getSuccessRate(endpoint) {
+    const endpointRequests = this.requests.filter(req => req.endpoint === endpoint);
+    if (endpointRequests.length === 0) return 100;
+    
+    const successfulRequests = endpointRequests.filter(req => req.success);
+    return (successfulRequests.length / endpointRequests.length) * 100;
+  }
+};
+
+// Usage in API endpoints
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  res.on('finish', () => {
+    const endTime = Date.now();
+    apiPerformanceTracker.trackRequest(req.path, startTime, endTime, res.statusCode < 400);
+  });
+  
+  next();
+});
+```
+
+### Error Logging Strategy
+```javascript
+// Comprehensive error logging
+const logger = {
+  logError: (error, context = {}) => {
+    const errorLog = {
+      timestamp: new Date().toISOString(),
+      level: 'ERROR',
+      message: error.message,
+      stack: error.stack,
+      context: {
+        endpoint: context.endpoint,
+        userId: context.userId,
+        dateRange: context.dateRange,
+        userAgent: context.userAgent,
+        ...context
+      }
+    };
+    
+    console.error(JSON.stringify(errorLog, null, 2));
+    
+    // Send to monitoring service
+    if (process.env.ERROR_WEBHOOK) {
+      fetch(process.env.ERROR_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorLog)
+      }).catch(err => console.error('Failed to send error log:', err));
+    }
+  },
+  
+  logAPIError: (error, endpoint, params) => {
+    logger.logError(error, {
+      type: 'API_ERROR',
+      endpoint,
+      params,
+      googleAnalyticsError: error.code
+    });
+  },
+  
+  logFrontendError: (error, component, props) => {
+    logger.logError(error, {
+      type: 'FRONTEND_ERROR',
+      component,
+      props,
+      userAgent: navigator.userAgent
+    });
+  }
+};
+```
+
+---
+
+## Security Best Practices
+
+### Input Validation
+```javascript
+// Comprehensive input validation for API endpoints
+const validateAnalyticsRequest = (req) => {
+  const errors = [];
+  
+  // Date format validation
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (req.query.startDate && !dateRegex.test(req.query.startDate)) {
+    errors.push('Invalid startDate format. Use YYYY-MM-DD');
+  }
+  
+  if (req.query.endDate && !dateRegex.test(req.query.endDate)) {
+    errors.push('Invalid endDate format. Use YYYY-MM-DD');
+  }
+  
+  // Date range validation
+  if (req.query.startDate && req.query.endDate) {
+    const start = new Date(req.query.startDate);
+    const end = new Date(req.query.endDate);
+    const now = new Date();
+    
+    if (start > end) {
+      errors.push('Start date cannot be after end date');
+    }
+    
+    if (end > now) {
+      errors.push('End date cannot be in the future');
+    }
+    
+    // Limit date range to 2 years
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() - 2);
+    if (start < maxDate) {
+      errors.push('Date range cannot exceed 2 years');
+    }
+  }
+  
+  // Property ID validation
+  if (req.query.propertyId && !/^\d+$/.test(req.query.propertyId)) {
+    errors.push('Property ID must be numeric');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+// Usage in endpoints
+app.get('/api/analytics/totals', (req, res, next) => {
+  const validation = validateAnalyticsRequest(req);
+  
+  if (!validation.isValid) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: validation.errors
+    });
+  }
+  
+  next();
+});
+```
+
+### Rate Limiting
+```javascript
+// API rate limiting implementation
+const rateLimiter = {
+  requests: new Map(),
+  windowMs: 60000, // 1 minute
+  maxRequests: 100,
+  
+  isAllowed: (clientId) => {
+    const now = Date.now();
+    const windowStart = Math.floor(now / this.windowMs) * this.windowMs;
+    
+    if (!this.requests.has(clientId)) {
+      this.requests.set(clientId, []);
+    }
+    
+    const clientRequests = this.requests.get(clientId).filter(
+      timestamp => timestamp >= windowStart
+    );
+    
+    return clientRequests.length < this.maxRequests;
+  },
+  
+  recordRequest: (clientId) => {
+    const now = Date.now();
+    if (!this.requests.has(clientId)) {
+      this.requests.set(clientId, []);
+    }
+    
+    this.requests.get(clientId).push(now);
+  }
+};
+
+// Apply rate limiting
+app.use((req, res, next) => {
+  const clientId = req.ip || req.headers['x-forwarded-for'];
+  
+  if (rateLimiter.isAllowed(clientId)) {
+    rateLimiter.recordRequest(clientId);
+    next();
+  } else {
+    res.status(429).json({
+      error: 'Too many requests',
+      message: `Rate limit exceeded. Maximum ${rateLimiter.maxRequests} requests per ${rateLimiter.windowMs / 1000} seconds`
+    });
+  }
+});
+```
+
+---
+
+## Data Privacy & Compliance
+
+### GDPR Compliance
+```javascript
+// Data anonymization for privacy compliance
+const anonymizeUserData = (data) => {
+  return data.map(item => ({
+    ...item,
+    // Remove exact timestamps for privacy
+    date: item.date.substring(0, 7), // Only YYYY-MM
+    
+    // Round user counts to ranges for privacy
+    activeUsers: item.activeUsers < 5 ? '< 5' : 
+               item.activeUsers < 20 ? '5-20' :
+               item.activeUsers < 50 ? '20-50' : '> 50',
+    
+    // Aggregate small countries into "Other" for privacy
+    country: item.country === 'US' || item.country === 'IN' ? item.country : 'Other',
+    
+    // Remove specific page titles for privacy
+    pageTitle: item.pageTitle.includes('/profile') || item.pageTitle.includes('/account') 
+              ? 'Other Page' 
+              : item.pageTitle
+  }));
+};
+
+// Consent management
+const consentManager = {
+  hasAnalyticsConsent: () => {
+    return localStorage.getItem('analytics-consent') === 'true';
+  },
+  
+  requestConsent: () => {
+    // Show consent modal
+    return new Promise((resolve) => {
+      const consentModal = showConsentModal({
+        onAccept: () => {
+          localStorage.setItem('analytics-consent', 'true');
+          resolve(true);
+        },
+        onDecline: () => {
+          localStorage.setItem('analytics-consent', 'false');
+          resolve(false);
+        }
+      });
+    });
+  },
+  
+  trackWithConsent: (eventName, data) => {
+    if (this.hasAnalyticsConsent()) {
+      // Proceed with analytics tracking
+      gtag('event', eventName, data);
+    } else {
+      console.log('Analytics tracking blocked due to consent');
+    }
+  }
+};
+```
+
+---
+
+## Deployment Automation
+
+### CI/CD Pipeline
+```yaml
+# GitHub Actions workflow for automated deployment
+name: Deploy Analytics Dashboard
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm install
+          
+      - name: Run tests
+        run: |
+          npm test
+          
+      - name: Build frontend
+        run: |
+          cd ..
+          npm run build
+          
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Render
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"serviceId": "srv-xxxxxxxx", "clearCache": true}' \
+            https://api.render.com/v1/services/srv-xxxxxxxx/deploys
+```
+
+### Environment Management
+```bash
+# Environment-specific configuration scripts
+#!/bin/bash
+
+# setup-local.sh - Local development setup
+echo "Setting up local development environment..."
+cp backend/.env.example backend/.env
+echo "Please edit backend/.env with your Google Analytics credentials"
+npm install
+npm run dev
+
+# setup-production.sh - Production deployment
+echo "Setting up production environment..."
+echo "Please ensure these environment variables are set:"
+echo "- GA_SERVICE_ACCOUNT (JSON string)"
+echo "- GA_PROPERTY_ID (numeric)"
+echo "- NODE_ENV=production"
+npm run build
+echo "Frontend built successfully"
+echo "Deploy to production with: git push origin main"
+```
+
+---
+
+## Advanced Analytics Features
+
+### Custom Event Tracking
+```javascript
+// Advanced event tracking implementation
+const customEventTracker = {
+  trackPageView: (pagePath, pageTitle) => {
+    gtag('config', 'GA_MEASUREMENT_ID');
+    gtag('event', 'page_view', {
+      page_title: pageTitle,
+      page_location: pagePath,
+      custom_parameter_1: window.innerWidth,
+      custom_parameter_2: window.innerHeight
+    });
+  },
+  
+  trackUserEngagement: (engagementType, duration) => {
+    gtag('event', 'user_engagement', {
+      engagement_type: engagementType,
+      engagement_duration: duration,
+      user_agent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
+  },
+  
+  trackConversion: (conversionType, value) => {
+    gtag('event', 'conversion', {
+      conversion_type: conversionType,
+      conversion_value: value,
+      currency: 'USD',
+      transaction_id: generateTransactionId()
+    });
+  },
+  
+  trackCustomDimension: (dimensionName, dimensionValue) => {
+    gtag('config', 'GA_MEASUREMENT_ID', {
+      custom_map: {
+        [dimensionName]: dimensionValue
+      }
+    });
+  }
+};
+```
+
+### Real-time Analytics
+```javascript
+// WebSocket implementation for real-time updates
+const realTimeAnalytics = {
+  connections: new Set(),
+  
+  initWebSocket: () => {
+    const ws = new WebSocket('wss://your-analytics-server.com/real-time');
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === 'user_activity') {
+        this.updateUserCount(data.activeUsers);
+      }
+      
+      if (data.type === 'page_view') {
+        this.updatePageViews(data.pagePath, data.views);
+      }
+    };
+    
+    ws.onopen = () => {
+      console.log('Real-time analytics connected');
+      this.connections.add(ws);
+    };
+    
+    ws.onclose = () => {
+      this.connections.delete(ws);
+    };
+  },
+  
+  updateUserCount: (count) => {
+    // Update UI with new user count
+    const userCountElement = document.getElementById('active-users-count');
+    if (userCountElement) {
+      userCountElement.textContent = count;
+      userCountElement.classList.add('pulse-animation');
+      setTimeout(() => {
+        userCountElement.classList.remove('pulse-animation');
+      }, 1000);
+    }
+  }
+};
+```
+
+---
+
+*Last Updated: February 24, 2026*
+*Version: 2.0.0*

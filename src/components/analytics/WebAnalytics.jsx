@@ -11,6 +11,14 @@ export default function WebAnalytics({ handleLogout }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  // Helper function to format date as YYYY-MM-DD without timezone issues
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   // Set default date range to last 6 months
   const getDefaultDateRange = () => {
     const endDate = new Date();
@@ -26,15 +34,20 @@ export default function WebAnalytics({ handleLogout }) {
   useEffect(() => {
     async function fetchAnalytics() {
       try {
-        console.log('🔄 fetchAnalytics called with dateRange:', dateRange);
+        // console.log('🔄 fetchAnalytics called with dateRange:', dateRange);
+        // console.log('📅 Date Range Selected:', dateRange.startDate.toLocaleDateString(), 'to', dateRange.endDate.toLocaleDateString());
+        // console.log('🔍 Total Users Calculation: Will fetch from /api/analytics/totals endpoint');
         
         // Always use date range parameters (default 6 months or user selected)
-        const startDate = dateRange.startDate.toISOString().split('T')[0];
-        const endDate = dateRange.endDate.toISOString().split('T')[0];
+        const startDate = formatDate(dateRange.startDate);
+        const endDate = formatDate(dateRange.endDate);
         const params = new URLSearchParams({
           startDate: startDate,
           endDate: endDate,
         });
+        
+        // console.log('🌐 API URL:', `${API_BASE_URL}/api/analytics/totals?${params.toString()}`);
+        // console.log('📅 Formatted Dates:', { startDate, endDate });
 
         const response = await fetch(
           `${API_BASE_URL}/api/analytics/totals?${params.toString()}`,
@@ -52,10 +65,6 @@ export default function WebAnalytics({ handleLogout }) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const json = await response.json();
         
-        console.log('📊 WebAnalytics API Response:', json);
-        console.log('🌐 API URL:', `${API_BASE_URL}/api/analytics/totals${params ? `?${params.toString()}` : ''}`);
-        console.log('📅 Date range:', dateRange);
-        
         const data = {
           views: parseInt(json.totalViews) || 0,
           users: parseInt(json.totalUsers) || 0,
@@ -63,10 +72,13 @@ export default function WebAnalytics({ handleLogout }) {
           events: parseInt(json.totalEvents) || 0,
         };
         
-        console.log('💾 Setting analytics data:', data);
+        // console.log('📊 WebAnalytics API Response:', json);
+        // console.log('💾 Setting analytics data:', data);
+        // console.log('👥 Total Users Set:', data.users, '(unique users from selected date range)');
+        // console.log('📈 Frontend Calculation: parseInt(json.totalUsers) from backend response');
         setAnalyticsData(data);
       } catch (err) {
-        console.error('❌ Analytics fetch error:', err);
+        // console.error('❌ Analytics fetch error:', err);
         setAnalyticsData({
           views: 0,
           users: 0,
@@ -82,7 +94,7 @@ export default function WebAnalytics({ handleLogout }) {
   }, [dateRange.startDate, dateRange.endDate]);
 
   const handleDateRangeChange = ({ startDate, endDate }) => {
-    console.log('🗓️ DateRangePicker onChange called:', { startDate, endDate });
+    // console.log('🗓️ DateRangePicker onChange called:', { startDate, endDate });
     setDateRange({ startDate, endDate });
   };
 
