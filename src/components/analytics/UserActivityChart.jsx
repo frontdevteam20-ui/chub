@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Chart } from "react-google-charts";
 
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Format date to 'DD Mon' with safe error handling
 function parseDate(dateStr) {
   try {
@@ -70,8 +78,8 @@ export default function UserActivityChart({ dateRange }) {
         let url = `${API_BASE_URL}/api/analytics/user-activity-summary`;
         
         if (customRangeActive) {
-          const startDate = dateRange.startDate.toISOString().split('T')[0];
-          const endDate = dateRange.endDate.toISOString().split('T')[0];
+          const startDate = formatDate(dateRange.startDate);
+          const endDate = formatDate(dateRange.endDate);
           const params = new URLSearchParams({
             startDate: startDate,
             endDate: endDate,
@@ -83,11 +91,10 @@ export default function UserActivityChart({ dateRange }) {
           const startDate = new Date();
           startDate.setMonth(startDate.getMonth() - 6);
           
-          const startDateStr = startDate.toISOString().split('T')[0];
-          const endDateStr = endDate.toISOString().split('T')[0];
+          const startDateStr = formatDate(startDate);
+          const endDateStr = formatDate(endDate);
           
           url += `?startDate=${startDateStr}&endDate=${endDateStr}`;
-          console.log('📅 Default 6-month range:', startDateStr, 'to', endDateStr);
         }
 
         const response = await fetch(url, {
@@ -101,12 +108,21 @@ export default function UserActivityChart({ dateRange }) {
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const json = await response.json();
-        console.log('📊 UserActivityChart Raw API Response:', json);
         if (!json || typeof json !== 'object') throw new Error('Invalid API response format');
+
+        console.log('📈 User Activity Chart API Response:', json);
+        console.log('📊 User Activity Chart API URL:', url);
+        console.log('📅 User Activity Date Range:', { startDate: dateRange.startDate?.toLocaleDateString(), endDate: dateRange.endDate?.toLocaleDateString() });
 
         // Handle API response - expects array of data points from /api/analytics
         const apiData = Array.isArray(json) ? json : [];
-        console.log('📈 UserActivityChart Processed API Data:', apiData);
+        
+        console.log('📊 User Activity Processed Data:', apiData);
+        
+        // Log each API data item
+        apiData.forEach((item, index) => {
+          console.log(`🔍 API Item ${index}:`, item, '→ activeUsers:', item.activeUsers, '→ parseInt:', parseInt(item.activeUsers));
+        });
         
         if (apiData.length === 0) {
           setChartData([["Date", "Active Users"]]);
@@ -118,33 +134,31 @@ export default function UserActivityChart({ dateRange }) {
         const rows = apiData.map(item => {
           // Parse YYYYMMDD format to Date object and convert to string format
           const dateStr = item.date;
-          console.log('🗓️ Processing date string:', dateStr);
           if (dateStr && dateStr.length === 8) {
             const year = parseInt(dateStr.substring(0, 4));
             const month = parseInt(dateStr.substring(4, 6)) - 1; // JS months are 0-indexed
             const day = parseInt(dateStr.substring(6, 8));
-            const date = new Date(year, month, day);
             
-            if (date && !isNaN(date.getTime())) {
-              // Format date as YYYY-MM-DD string for Google Charts
-              const formattedDate = date.toISOString().split('T')[0];
+            const date = new Date(year, month, day);
+            if (!isNaN(date.getTime())) {
+              // Format date as YYYY-MM-DD string for Google Charts (timezone-safe)
+              const formattedDate = formatDate(date);
               const result = [formattedDate, parseInt(item.activeUsers) || 0];
-              console.log('📅 Converted date:', date, '-> formatted:', formattedDate, '-> result:', result);
+              console.log('🔍 Processing item:', item, '→ result:', result);
               return result;
             }
           }
-          console.log('❌ Invalid date format:', dateStr);
           return null;
         }).filter(Boolean);
         
-        console.log('📊 Final chart data rows:', rows);
+        console.log('📊 User Activity Chart Data Rows:', rows);
         
-        // console.log('Final chart data rows:', rows);
-
         // Calculate statistics based on date range
         const totalUsers = apiData.reduce((sum, d) => sum + (parseInt(d.activeUsers) || 0), 0);
         const avgUsers = Math.round(totalUsers / apiData.length);
         const maxUsers = Math.max(...apiData.map(d => parseInt(d.activeUsers) || 0));
+        
+        console.log('📈 User Activity Statistics:', { totalUsers, avgUsers, maxUsers });
         
         // Calculate trend based on available data
         let trendPercentage = 0;
@@ -158,9 +172,19 @@ export default function UserActivityChart({ dateRange }) {
           const previousAvg = previousData.length > 0 ? previousData.reduce((sum, d) => sum + (parseInt(d.activeUsers) || 0), 0) / previousData.length : recentAvg;
           trendPercentage = previousAvg > 0 ? Math.round(((recentAvg - previousAvg) / previousAvg) * 100) : 0;
           trendSign = trendPercentage >= 0 ? '+' : '';
+          
+          console.log('📊 User Activity Trend Calculation:', { recentAvg, previousAvg, trendPercentage: trendSign + trendPercentage + '%' });
         }
 
         setChartData([["Date", "Active Users"], ...rows]);
+        
+        console.log('📊 Final User Activity Chart Data:', [["Date", "Active Users"], ...rows]);
+        
+        // Log what will be displayed in the chart
+        console.log('📈 Chart Display Data:');
+        rows.forEach((row, index) => {
+          console.log(`📊 Chart Row ${index}:`, row, '→ Date:', row[0], '→ Users:', row[1]);
+        });
         
         // Dynamic stats based on date range
         if (customRangeActive) {

@@ -58,10 +58,6 @@ export default function Acquisition({ handleLogout }) {
       setLoading(true);
       setError(null);
       try {
-        console.log('📊 Acquisition Analytics API Request:', { 
-          startDate: dateRange.startDate.toISOString().split('T')[0], 
-          endDate: dateRange.endDate.toISOString().split('T')[0] 
-        });
         
         const url = new URL('https://chub-j3ha.onrender.com/api/analytics/user-acquisition-summary', window.location.origin);
         url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
@@ -69,7 +65,6 @@ export default function Acquisition({ handleLogout }) {
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch analytics summary');
         const data = await res.json();
-        console.log('📊 Acquisition Analytics API Response:', data);
         setAnalyticsData({
           sessions: data.sessions,
           avgEngagementTime: `${Math.round(data.averageEngagementTimePerActiveUser)}s`,
@@ -77,7 +72,6 @@ export default function Acquisition({ handleLogout }) {
           bounceRate: (data.bounceRate * 100).toFixed(2)
         });
       } catch (err) {
-        console.error('❌ Acquisition Analytics API Error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -92,10 +86,6 @@ export default function Acquisition({ handleLogout }) {
       setTableLoading(true);
       setTableError(null);
       try {
-        console.log('📊 Acquisition Table API Request:', { 
-          startDate: dateRange.startDate.toISOString().split('T')[0], 
-          endDate: dateRange.endDate.toISOString().split('T')[0] 
-        });
         
         const url = new URL('https://chub-j3ha.onrender.com/api/analytics/traffic-acquisition', window.location.origin);
         url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
@@ -103,7 +93,6 @@ export default function Acquisition({ handleLogout }) {
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch traffic acquisition data');
         const apiData = await res.json();
-        console.log('📊 Acquisition Table API Response:', apiData);
         // Transform API data to DataTable format
         const rows = apiData.rows || [];
         // Calculate totalUsers sum for percentage

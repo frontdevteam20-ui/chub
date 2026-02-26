@@ -33,6 +33,14 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDateForAPI = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 function Analytics({ dateRange }) {
   const [analyticsData, setAnalyticsData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,13 +84,10 @@ function Analytics({ dateRange }) {
       // Build URL with date range if provided
       let url = `${API_BASE_URL}/api/analytics?period=${period}&metric=${metric}&dimensions=${dimensions}`;
       if (dateRange && dateRange.startDate && dateRange.endDate) {
-        const startDate = dateRange.startDate.toISOString().split('T')[0];
-        const endDate = dateRange.endDate.toISOString().split('T')[0];
+        const startDate = formatDateForAPI(dateRange.startDate);
+        const endDate = formatDateForAPI(dateRange.endDate);
         url += `&startDate=${startDate}&endDate=${endDate}`;
       }
-      
-      console.log('📊 Analytics API URL:', url);
-      console.log('📅 Analytics Date Range:', dateRange);
       
       const response = await fetch(url, {
           method: 'GET',
@@ -94,11 +99,21 @@ function Analytics({ dateRange }) {
           }
         }
       );
+      
+      console.log('📊 Analytics API URL:', url);
+      console.log('📅 Analytics Date Range:', { 
+        startDate: dateRange?.startDate?.toLocaleDateString(), 
+        endDate: dateRange?.endDate?.toLocaleDateString() 
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch analytics data');
       }
       const data = await response.json();
-      console.log('API Response:', data);
+      
+      console.log('📈 Analytics API Response:', data);
+      console.log('📊 Selected Metric:', metric);
+      console.log('📋 Requested Dimensions:', dimensions);
       
       // Add default values for missing dimensions and format dates
       const processedData = Array.isArray(data) ? data.map(item => ({

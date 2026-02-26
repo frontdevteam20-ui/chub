@@ -3,6 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { Chart } from "react-google-charts";
 
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const ActiveCountry = ({ startDate, endDate }) => {
   const [chartData, setChartData] = useState([["Country", "Active Users"]]);
   const [countryListData, setCountryListData] = useState([]);
@@ -17,12 +25,11 @@ const ActiveCountry = ({ startDate, endDate }) => {
         let url = "https://chub-j3ha.onrender.com/api/analytics/country-active-users";
         if (startDate && endDate) {
           const params = new URLSearchParams({
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0],
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate),
           });
           url += `?${params.toString()}`;
         }
-        console.log('🌍 ActiveCountry API Request:', url);
         const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
