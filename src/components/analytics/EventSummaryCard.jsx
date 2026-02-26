@@ -37,10 +37,6 @@ export default function EventSummaryCard({ dateRange }) {
       }
       const data = await response.json();
       
-      console.log(' EventSummaryCard API Response:', data);
-      console.log(' EventSummaryCard API URL:', url);
-      console.log(' EventSummaryCard Date Range:', dateRange);
-      
       // Handle different response structures
       let processedData = [];
       if (Array.isArray(data)) {
@@ -56,7 +52,6 @@ export default function EventSummaryCard({ dateRange }) {
         }));
       }
       
-      console.log(' Processed EventSummaryCard data:', processedData);
       setEvents(processedData);
       setError(null);
     } catch (err) {

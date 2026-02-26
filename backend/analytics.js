@@ -25,6 +25,9 @@ const DEFAULT_DIMENSIONS = ['date'];
 app.get('/api/analytics', async (req, res) => {
   try {
     const { period, metric, dimensions, startDate, endDate } = req.query; // metric: string, dimensions: comma-separated string
+    
+    console.log('📊 Analytics API Request:', { period, metric, dimensions, startDate, endDate });
+    
     let dateRange;
     
     // Handle custom date range
@@ -51,6 +54,8 @@ app.get('/api/analytics', async (req, res) => {
       dimensions: dims,
     });
 
+    console.log('📊 Google Analytics Raw Response for Analytics:', response);
+
     // Build result rows
     const result = response.rows.map(row => {
       const dimObj = {};
@@ -64,6 +69,9 @@ app.get('/api/analytics', async (req, res) => {
       return { ...dimObj, ...metricObj };
     });
 
+    console.log('📊 Analytics Processed Result:', result);
+    console.log('📊 Result Length:', result.length);
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -76,6 +84,8 @@ app.get('/api/analytics/totals', async (req, res) => {
     const { startDate, endDate } = req.query;
     
     console.log('📊 WebAnalytics Totals API Request:', { startDate, endDate });
+    console.log('📅 Date Range Selected:', startDate, 'to', endDate);
+    console.log('🔍 Total Users Calculation: Fetching activeUsers metric from Google Analytics');
     
     // Set default date range if not provided
     let dateRange;
@@ -104,6 +114,8 @@ app.get('/api/analytics/totals', async (req, res) => {
     };
 
     console.log('📊 WebAnalytics Totals API Response:', result);
+    console.log('👥 Total Users Result:', result.totalUsers, '(unique users in selected date range)');
+    console.log('📈 Calculation Method: activeUsers metric from GA Data API v1beta');
     res.json(result);
   } catch (err) {
     console.error('❌ Totals API error:', err);
@@ -115,8 +127,6 @@ app.get('/api/analytics/totals', async (req, res) => {
 app.get('/api/analytics/event-count-by-name', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
-    console.log('📈 EventSummaryCard API Request:', { startDate, endDate });
     
     // Set default date range if not provided
     let dateRange;
@@ -139,7 +149,6 @@ app.get('/api/analytics/event-count-by-name', async (req, res) => {
       eventCount: parseInt(row.metricValues[0].value) || 0,
     }));
     
-    console.log('📊 EventSummaryCard API Response:', result);
     res.json(result);
   } catch (err) {
     console.error('❌ Event count API error:', err);
@@ -152,7 +161,7 @@ app.get('/api/analytics/user-activity-summary', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    console.log('📈 UserActivityChart API Request:', { startDate, endDate });
+    console.log('📈 User Activity Backend API Request:', { startDate, endDate });
     
     // Set default date range if not provided
     let dateRange;
@@ -162,6 +171,8 @@ app.get('/api/analytics/user-activity-summary', async (req, res) => {
       dateRange = { startDate: '30daysAgo', endDate: 'today' };
     }
     
+    console.log('📅 User Activity Date Range for GA:', dateRange);
+    
     // Fetch real data from Google Analytics
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
@@ -170,15 +181,19 @@ app.get('/api/analytics/user-activity-summary', async (req, res) => {
       dimensions: [{ name: 'date' }],
     });
 
+    console.log('📊 Google Analytics Raw Response:', response);
+
     const result = response.rows.map(row => ({
       date: row.dimensionValues[0].value,
       activeUsers: parseInt(row.metricValues[0].value) || 0,
     }));
     
-    console.log('📊 UserActivityChart API Response:', result);
+    console.log('📈 User Activity Backend Result:', result);
+    console.log('🔍 Total Users Calculation: activeUsers metric from Google Analytics Data API v1beta');
+    
     res.json(result);
   } catch (err) {
-    console.error('❌ User activity summary API error:', err);
+    console.error('❌ User Activity Backend Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -187,8 +202,6 @@ app.get('/api/analytics/user-activity-summary', async (req, res) => {
 app.get('/api/analytics/country-active-users', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
-    console.log('🌍 ActiveCountry API Request:', { startDate, endDate });
     
     // Set default date range if not provided
     let dateRange;
@@ -214,10 +227,8 @@ app.get('/api/analytics/country-active-users', async (req, res) => {
       activeUsers: parseInt(row.metricValues[0].value) || 0
     }));
     
-    console.log('🌍 ActiveCountry Real API Response:', processedData);
     res.json(processedData);
   } catch (err) {
-    console.error('❌ ActiveCountry API error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -227,7 +238,7 @@ app.get('/api/analytics/page-title-analytics', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    console.log('📄 ScreenAnalytics API Request:', { startDate, endDate });
+    console.log('📊 Page Title Analytics API Request:', { startDate, endDate });
     
     // Set default date range if not provided
     let dateRange;
@@ -236,6 +247,8 @@ app.get('/api/analytics/page-title-analytics', async (req, res) => {
     } else {
       dateRange = { startDate: '30daysAgo', endDate: 'today' };
     }
+    
+    console.log('📅 Page Title Date Range for GA:', dateRange);
     
     // Fetch real data from Google Analytics
     const [response] = await analyticsDataClient.runReport({
@@ -249,6 +262,8 @@ app.get('/api/analytics/page-title-analytics', async (req, res) => {
       ],
       dimensions: [{ name: 'pageTitle' }],
     });
+    
+    console.log('📊 Google Analytics Raw Response for Page Titles:', response);
     
     // Process the real data
     const apiData = response.rows || [];
@@ -265,10 +280,10 @@ app.get('/api/analytics/page-title-analytics', async (req, res) => {
         : 0
     }));
     
-    console.log('📄 ScreenAnalytics Real API Response:', processedData);
+    console.log('📊 Page Title Analytics Processed Result:', processedData);
+    console.log('📊 Page Title Result Length:', processedData.length);
     res.json(processedData);
   } catch (err) {
-    console.error('❌ ScreenAnalytics API error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -277,7 +292,6 @@ app.get('/api/analytics/page-title-analytics', async (req, res) => {
 app.get('/api/analytics/user-acquisition-summary', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    console.log('📊 User Acquisition Summary API Request:', { startDate, endDate });
     
     let dateRange;
     if (startDate && endDate) {
@@ -304,10 +318,8 @@ app.get('/api/analytics/user-acquisition-summary', async (req, res) => {
       bounceRate: parseFloat(response.rows?.[0]?.metricValues?.[3]?.value) || 0
     };
 
-    console.log('📊 User Acquisition Summary API Response:', result);
     res.json(result);
   } catch (err) {
-    console.error('❌ User Acquisition Summary API error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -316,7 +328,6 @@ app.get('/api/analytics/user-acquisition-summary', async (req, res) => {
 app.get('/api/analytics/traffic-acquisition', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    console.log('📊 Traffic Acquisition API Request:', { startDate, endDate });
     
     let dateRange;
     if (startDate && endDate) {
@@ -350,10 +361,8 @@ app.get('/api/analytics/traffic-acquisition', async (req, res) => {
       bounceRate: parseFloat(row.metricValues[3]?.value) || 0
     }));
 
-    console.log('📊 Traffic Acquisition API Response:', processedData);
     res.json({ rows: processedData });
   } catch (err) {
-    console.error('❌ Traffic Acquisition API error:', err);
     res.status(500).json({ error: err.message });
   }
 });

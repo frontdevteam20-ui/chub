@@ -4,6 +4,15 @@ import React, { useState, useEffect } from 'react';
  * ScreenAnalytics component that displays page analytics data
  * Fetches data from API and displays in a table format with visualizations
  */
+
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function ScreenAnalytics({ startDate, endDate }) {
   const [pageData, setPageData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,20 +25,17 @@ export default function ScreenAnalytics({ startDate, endDate }) {
         let url = 'https://chub-j3ha.onrender.com/api/analytics/page-title-analytics';
         if (startDate && endDate) {
           const params = new URLSearchParams({
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0],
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate),
           });
           url += `?${params.toString()}`;
         }
-        console.log('📄 ScreenAnalytics API Request:', url);
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Failed to fetch page analytics data');
         }
         const data = await response.json();
-        console.log('📄 ScreenAnalytics Raw API Response:', data);
         setPageData(data);
-        console.log('📄 ScreenAnalytics pageData set to:', data);
         setError(null);
       } catch (err) {
         setError(err.message);
@@ -64,9 +70,6 @@ export default function ScreenAnalytics({ startDate, endDate }) {
   };
 
   const maxValues = getMaxValues();
-  console.log('📄 ScreenAnalytics pageData length:', pageData.length);
-  console.log('📄 ScreenAnalytics maxValues:', maxValues);
-  console.log('📄 ScreenAnalytics loading:', loading, 'error:', error);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

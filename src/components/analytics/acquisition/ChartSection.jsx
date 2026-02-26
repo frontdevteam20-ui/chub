@@ -5,6 +5,14 @@ import {
 } from 'recharts';
 import { FaCalendarAlt } from 'react-icons/fa';
 
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -48,8 +56,8 @@ export default function ChartSection({
       setLoading(true);
       try {
         const url = new URL('https://chub-j3ha.onrender.com/api/analytics/traffic-acquisition');
-        url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
-        url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
+        url.searchParams.append('startDate', formatDate(dateRange.startDate));
+        url.searchParams.append('endDate', formatDate(dateRange.endDate));
         const response = await fetch(url);
         const apiData = await response.json();
 
@@ -60,15 +68,21 @@ export default function ChartSection({
         console.log('📊 ChartSection API Response:', apiData);
 
         // Process real data from API
-        const processedChartData = apiData.rows.map(row => ({
-          date: row.date,
-          'Organic Search': row.channel === 'Organic Search' ? parseInt(row.totalUsers) : 0,
-          'Direct': row.channel === 'Direct' ? parseInt(row.totalUsers) : 0,
-          'Referral': row.channel === 'Referral' ? parseInt(row.totalUsers) : 0,
-          'Organic Social': row.channel === 'Organic Social' ? parseInt(row.totalUsers) : 0,
-          'Unassigned': row.channel === 'Unassigned' ? parseInt(row.totalUsers) : 0,
-          Total: parseInt(row.totalUsers) || 0
-        }));
+        const processedChartData = apiData.rows.map(row => {
+          // Convert GA date format (YYYYMMDD) to readable format
+          const gaDate = row.date;
+          const formattedDate = `${gaDate.slice(0, 4)}-${gaDate.slice(4, 6)}-${gaDate.slice(6, 8)}`;
+          
+          return {
+            date: formattedDate,
+            'Organic Search': row.channel === 'Organic Search' ? parseInt(row.totalUsers) : 0,
+            'Direct': row.channel === 'Direct' ? parseInt(row.totalUsers) : 0,
+            'Referral': row.channel === 'Referral' ? parseInt(row.totalUsers) : 0,
+            'Organic Social': row.channel === 'Organic Social' ? parseInt(row.totalUsers) : 0,
+            'Unassigned': row.channel === 'Unassigned' ? parseInt(row.totalUsers) : 0,
+            Total: parseInt(row.totalUsers) || 0
+          };
+        });
 
         // Group by date and sum values for each channel
         const groupedData = {};
