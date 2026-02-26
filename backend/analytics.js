@@ -91,7 +91,8 @@ app.get('/api/analytics/totals', async (req, res) => {
       metrics: [
         { name: 'screenPageViews' },
         { name: 'activeUsers' },
-        { name: 'sessions' }
+        { name: 'sessions' },
+        { name: 'events' }
       ],
     });
 
