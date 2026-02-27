@@ -101,8 +101,7 @@ app.get('/api/analytics/totals', async (req, res) => {
       metrics: [
         { name: 'screenPageViews' },
         { name: 'activeUsers' },
-        { name: 'sessions' },
-        { name: 'events' }
+        { name: 'sessions' }
       ],
     });
 
@@ -110,7 +109,7 @@ app.get('/api/analytics/totals', async (req, res) => {
       totalViews: response.rows?.[0]?.metricValues?.[0]?.value || '0',
       totalUsers: response.rows?.[0]?.metricValues?.[1]?.value || '0',
       totalSessions: response.rows?.[0]?.metricValues?.[2]?.value || '0',
-      totalEvents: response.rows?.[0]?.metricValues?.[3]?.value || '0',
+      totalEvents: '0', // Set to 0 since events metric is not available in GA API
     };
 
     console.log('📊 WebAnalytics Totals API Response:', result);

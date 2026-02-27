@@ -44,7 +44,7 @@ export default function UserActivityChart({ dateRange }) {
         const customRangeActive = !!(dateRange && dateRange.startDate && dateRange.endDate);
         setIsCustomRange(customRangeActive);
 
-        const API_BASE_URL = "https://chub-j3ha.onrender.com";
+        const API_BASE_URL = "http://localhost:4000";
         
         // Determine data granularity based on date range
         let granularity = 'month';
@@ -242,7 +242,7 @@ export default function UserActivityChart({ dateRange }) {
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Year
+                  Bar Chart
                 </button>
                 <button
                   onClick={() => setViewMode('month')}
@@ -252,7 +252,7 @@ export default function UserActivityChart({ dateRange }) {
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Month
+                  Date Range
                 </button>
                 <button
                   onClick={() => setViewMode('date')}
@@ -262,7 +262,7 @@ export default function UserActivityChart({ dateRange }) {
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Date Range
+                  Line Chart
                 </button>
               </div>
               <p className="text-slate-500 text-sm mt-2">

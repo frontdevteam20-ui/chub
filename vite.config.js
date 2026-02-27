@@ -19,7 +19,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'https://chub-j3ha.onrender.com',
+        target: 'http://localhost:4000',
         changeOrigin: true,
         secure: false,
         ws: true

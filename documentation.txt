@@ -484,7 +484,7 @@ GA_SERVICE_ACCOUNT={"type":"service_account","project_id":"...",...}
 GA_PROPERTY_ID=495923879
 
 # URLs
-Backend: https://chub-j3ha.onrender.com
+Backend: http://localhost:4000
 Frontend: https://your-domain.com
 ```
 
