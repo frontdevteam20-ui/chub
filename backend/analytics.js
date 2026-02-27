@@ -348,6 +348,8 @@ app.get('/api/analytics/traffic-acquisition', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
+    console.log('📊 Traffic Acquisition API Request:', { startDate, endDate });
+    
     let dateRange;
     if (startDate && endDate) {
       dateRange = { startDate, endDate };
@@ -355,10 +357,14 @@ app.get('/api/analytics/traffic-acquisition', async (req, res) => {
       dateRange = { startDate: '30daysAgo', endDate: 'today' };
     }
 
+    console.log('📅 Traffic Acquisition Date Range for GA:', dateRange);
+
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate: dateRange.startDate, endDate: dateRange.endDate }],
       dimensions: [
+        { name: 'sessionSource' },
+        { name: 'sessionMedium' },
         { name: 'sessionDefaultChannelGroup' },
         { name: 'date' }
       ],
@@ -370,18 +376,49 @@ app.get('/api/analytics/traffic-acquisition', async (req, res) => {
       ],
     });
 
-    const apiData = response.rows || [];
-    const processedData = apiData.map(row => ({
-      channel: row.dimensionValues[0]?.value || 'Unknown',
-      date: row.dimensionValues[1]?.value || '',
-      totalUsers: parseInt(row.metricValues[0]?.value) || 0,
-      sessions: parseInt(row.metricValues[1]?.value) || 0,
-      averageSessionDuration: parseFloat(row.metricValues[2]?.value) || 0,
-      bounceRate: parseFloat(row.metricValues[3]?.value) || 0
-    }));
+    console.log('📊 Google Analytics Raw Response for Traffic Acquisition:', response);
 
+    const apiData = response.rows || [];
+    const processedData = apiData.map(row => {
+      const source = row.dimensionValues[0]?.value || 'Unknown';
+      const medium = row.dimensionValues[1]?.value || 'Unknown';
+      const channel = row.dimensionValues[2]?.value || 'Unknown';
+      const date = row.dimensionValues[3]?.value || '';
+      
+      // Create a more descriptive channel name
+      let channelName = channel;
+      if (medium === 'organic' || source === 'google' || source === 'bing' || source === 'yahoo') {
+        channelName = 'Organic Search';
+      } else if (medium === 'referral') {
+        channelName = 'Referral';
+      } else if (medium === 'social') {
+        channelName = 'Social';
+      } else if (medium === 'email') {
+        channelName = 'Email';
+      } else if (medium === 'cpc' || medium === 'ppc') {
+        channelName = 'Paid Search';
+      } else if (medium === 'display') {
+        channelName = 'Display';
+      } else if (medium === 'direct') {
+        channelName = 'Direct';
+      }
+      
+      return {
+        channel: channelName,
+        sessionSource: source,
+        sessionMedium: medium,
+        date: date,
+        totalUsers: parseInt(row.metricValues[0]?.value) || 0,
+        sessions: parseInt(row.metricValues[1]?.value) || 0,
+        averageSessionDuration: parseFloat(row.metricValues[2]?.value) || 0,
+        bounceRate: parseFloat(row.metricValues[3]?.value) || 0
+      };
+    });
+
+    console.log('📊 Traffic Acquisition Processed Result:', processedData);
     res.json({ rows: processedData });
   } catch (err) {
+    console.error('❌ Traffic Acquisition API error:', err);
     res.status(500).json({ error: err.message });
   }
 });

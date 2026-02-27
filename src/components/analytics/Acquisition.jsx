@@ -69,7 +69,7 @@ export default function Acquisition({ handleLogout }) {
       setError(null);
       try {
         
-        const url = new URL('https://chub-j3ha.onrender.com/api/analytics/user-acquisition-summary', window.location.origin);
+        const url = new URL('http://localhost:4000/api/analytics/user-acquisition-summary', window.location.origin);
         url.searchParams.append('startDate', formatDateForAPI(dateRange.startDate));
         url.searchParams.append('endDate', formatDateForAPI(dateRange.endDate));
         
@@ -104,7 +104,7 @@ export default function Acquisition({ handleLogout }) {
       setTableError(null);
       try {
         
-        const url = new URL('https://chub-j3ha.onrender.com/api/analytics/traffic-acquisition', window.location.origin);
+        const url = new URL('http://localhost:4000/api/analytics/traffic-acquisition', window.location.origin);
         url.searchParams.append('startDate', formatDateForAPI(dateRange.startDate));
         url.searchParams.append('endDate', formatDateForAPI(dateRange.endDate));
         
