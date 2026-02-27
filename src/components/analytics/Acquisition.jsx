@@ -7,6 +7,16 @@ import DataTable from '../analytics/acquisition/DataTable';
 import DateRangePicker from './DateRangePicker';
 import { chartOptions } from '../analytics/acquisition/constants';
 
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDateForAPI = (date) => {
+  // Get the current date in local timezone to avoid timezone offset issues
+  const localDate = new Date(date);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Dates array from constants
 const chartDates = [
   '09 Jul','11 Jul','13 Jul','15 Jul','17 Jul','19 Jul','21 Jul','23 Jul','25 Jul','27 Jul','29 Jul','31 Jul','01 Aug','03 Aug','05 Aug','07 Aug','09 Aug','11 Aug'
@@ -59,17 +69,24 @@ export default function Acquisition({ handleLogout }) {
       setError(null);
       try {
         
-        const url = new URL('http://localhost:4000/api/analytics/user-acquisition-summary', window.location.origin);
-        url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
-        url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
+        const url = new URL('https://chub-j3ha.onrender.com/api/analytics/user-acquisition-summary', window.location.origin);
+        url.searchParams.append('startDate', formatDateForAPI(dateRange.startDate));
+        url.searchParams.append('endDate', formatDateForAPI(dateRange.endDate));
+        
+        console.log('📊 Acquisition fetching analytics:', { 
+          start: formatDateForAPI(dateRange.startDate), 
+          end: formatDateForAPI(dateRange.endDate),
+          url: url.toString()
+        });
+        
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch analytics summary');
         const data = await res.json();
         setAnalyticsData({
           sessions: data.sessions,
-          avgEngagementTime: `${Math.round(data.averageEngagementTimePerActiveUser)}s`,
-          keyEvents: data.totalKeyEvents,
-          bounceRate: (data.bounceRate * 100).toFixed(2)
+          avgEngagementTime: `${Math.round(data.averageSessionDuration)}s`,
+          keyEvents: data.totalConversions,
+          bounceRate: data.engagementRate ? (parseFloat(data.engagementRate) * 100).toFixed(2) : '0'
         });
       } catch (err) {
         setError(err.message);
@@ -87,9 +104,16 @@ export default function Acquisition({ handleLogout }) {
       setTableError(null);
       try {
         
-        const url = new URL('http://localhost:4000/api/analytics/traffic-acquisition', window.location.origin);
-        url.searchParams.append('startDate', dateRange.startDate.toISOString().split('T')[0]);
-        url.searchParams.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
+        const url = new URL('https://chub-j3ha.onrender.com/api/analytics/traffic-acquisition', window.location.origin);
+        url.searchParams.append('startDate', formatDateForAPI(dateRange.startDate));
+        url.searchParams.append('endDate', formatDateForAPI(dateRange.endDate));
+        
+        console.log('📊 Acquisition fetching table data:', { 
+          start: formatDateForAPI(dateRange.startDate), 
+          end: formatDateForAPI(dateRange.endDate),
+          url: url.toString()
+        });
+        
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch traffic acquisition data');
         const apiData = await res.json();

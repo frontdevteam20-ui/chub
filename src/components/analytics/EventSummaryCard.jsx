@@ -4,6 +4,17 @@ import React, { useState, useEffect } from 'react';
  * Beautiful EventSummaryCard with modern UI design.
  * Fetches data dynamically from API and displays with pagination.
  */
+
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDate = (date) => {
+  // Get the current date in local timezone to avoid timezone offset issues
+  const localDate = new Date(date);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function EventSummaryCard({ dateRange }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,14 +33,28 @@ export default function EventSummaryCard({ dateRange }) {
     try {
       setLoading(true);
       // Build query params if dateRange is provided
-      let url = 'http://localhost:4000/api/analytics/event-count-by-name';
-      if (dateRange && dateRange.startDate && dateRange.endDate) {
+      let url = 'https://chub-j3ha.onrender.com/api/analytics/event-count-by-name';
+      
+      // Use provided dates or default to today
+      let start = dateRange?.startDate;
+      let end = dateRange?.endDate;
+      
+      // If no dates provided, default to today's data
+      if (!start && !end) {
+        const today = new Date();
+        start = today;
+        end = today;
+      }
+      
+      if (start && end) {
         const params = new URLSearchParams({
-          startDate: dateRange.startDate.toISOString().split('T')[0],
-          endDate: dateRange.endDate.toISOString().split('T')[0],
+          startDate: formatDate(start),
+          endDate: formatDate(end),
         });
         url += `?${params.toString()}`;
       }
+      
+      console.log('📊 EventSummaryCard fetching:', { start, end, url });
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -64,7 +89,7 @@ export default function EventSummaryCard({ dateRange }) {
 
   useEffect(() => {
     fetchEventData();
-  }, [dateRange.startDate, dateRange.endDate]);
+  }, [dateRange?.startDate, dateRange?.endDate]);
 
   // Calculate pagination
   const totalPages = Math.ceil(events.length / eventsPerPage);
@@ -136,7 +161,7 @@ export default function EventSummaryCard({ dateRange }) {
             </h2>
             <p className="text-sm text-gray-500 font-medium">Event Count by Name</p>
             <p className="text-sm text-gray-500 font-medium">
-              {dateRange.startDate && dateRange.endDate 
+              {dateRange?.startDate && dateRange?.endDate 
                 ? `Date Range: ${dateRange.startDate.toLocaleDateString()} - ${dateRange.endDate.toLocaleDateString()}`
                 : 'No date range selected'
               }

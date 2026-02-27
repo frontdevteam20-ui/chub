@@ -7,10 +7,26 @@ import React, { useState, useEffect } from 'react';
 
 // Helper function to format date as YYYY-MM-DD without timezone issues
 const formatDate = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  // Get the current date in local timezone to avoid timezone offset issues
+  const localDate = new Date(date);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+// Helper function to get today's date in local timezone
+const getTodayDate = () => {
+  const now = new Date();
+  return formatDate(now);
+  
+};
+
+// Helper function to get yesterday's date in local timezone
+const getYesterdayDate = () => {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return formatDate(yesterday);
 };
 
 export default function ScreenAnalytics({ startDate, endDate }) {
@@ -22,14 +38,29 @@ export default function ScreenAnalytics({ startDate, endDate }) {
     const fetchPageData = async () => {
       try {
         setLoading(true);
-        let url = 'http://localhost:4000/api/analytics/page-title-analytics';
-        if (startDate && endDate) {
+        let url = 'https://chub-j3ha.onrender.com/api/analytics/page-title-analytics';
+        
+        // Use provided dates or default to today
+        let start = startDate;
+        let end = endDate;
+        
+        // If no dates provided, default to today's data
+        if (!start && !end) {
+          const today = new Date();
+          start = today;
+          end = today;
+        }
+        
+        if (start && end) {
           const params = new URLSearchParams({
-            startDate: formatDate(startDate),
-            endDate: formatDate(endDate),
+            startDate: formatDate(start),
+            endDate: formatDate(end),
           });
           url += `?${params.toString()}`;
         }
+        
+        console.log('📊 ScreenAnalytics fetching:', { start, end, url });
+        
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Failed to fetch page analytics data');
